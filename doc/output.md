@@ -70,6 +70,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 - Files:
    - `hsMetrics_all.out` : summary of the some of the most meaningful columns in picard hsmetrics output for all the samples in the project.
    - `{sample_id}_hsMetrics.out`: full picard hsmetrics output per sample.
+   - Description of Picard hsMetrics columns in its output can be found in [AnnexIII](#annex-iii)
    
 ## Variant Calling
 ### Samtools
@@ -112,6 +113,16 @@ Besides functional annotation some variant filtering is performed:
    - `{sample_id}/{sample_id}_header.table`: intermediate file for header cleaning.
 
 - Description of kggseq columns in its output can be found in [Annex II](#annex-ii)
+
+# MultiQC
+[MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
+
+**Output directory:** ANALYSIS/{ANALYSIS_ID}/99-stats
+
+* `multiqc_report.html`: MultiQC report - a standalone HTML file that can be viewed in your web browser
+* `multiqc_data/`: Directory containing parsed statistics from the different tools used in the pipeline
+
+For more information about how to use MultiQC reports, see http://multiqc.info
 
 ## Annex I
 |Column|Name|
