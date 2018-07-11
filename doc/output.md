@@ -9,11 +9,12 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 
 * [FastQC](#fastqc) - read quality control
 * [Trimmomatic](#trimmomatic) - adapter and low quality trimming
-* [BWA](#bwa) - alignment
+* [BWA](#bwa) - mapping against reference genome
 * [Picard](#picard) - enrichment and alignment metrics
 * [SAMtools](#samtools) - alignment result processing and variant calling.
-* [VarScan](#varscan)
+* [VarScan](#varscan) - variant calling.
 * [KGGSeq](#kggseq) - variant annotation.
+* [MultiQC](#multiqc) - quality statistics summary
 
 ## Preprocessing
 ### FastQC
@@ -21,6 +22,11 @@ Quality control is performed using [FastQC](https://www.bioinformatics.babraham.
 For further reading and documentation see the [FastQC help](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/).
 
 **Results directory**: ANALYSIS/{ANALYSIS_ID}/01-fastqc
+- There is one folder per sample.
+- Files:
+   - `{sample_id}/{sample_id}_R[12]_fastqc.html`: html report. This file can be opened in your favourite web browser (Firefox/chrome preferable) and it contains the different graphs that fastqc calculates for QC.
+   - `{sample_id}/{sample_id}_R[12]_fastqc` : folder with fastqc output in plain text.
+   - `{sample_id}/{sample_id}_R[12]_fastqc.zip`: zip compression of above folder.
 
 ### Trimming
 [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) is used for removal of adapter contamination and trimming of low quality regions. 
@@ -32,9 +38,12 @@ Parameters included for trimming are:
 MultiQC reports the percentage of bases removed by trimming in bar plot showing percentage or reads trimmed in forward and reverse.
 
 **Results directory**: ANALYSIS/{ANALYSIS_ID}/02-preprocessing
+- There is one folder per sample.
+- Files:
+   - `{sample_id}/{sample_id}_R[12]_filtered.fastq.gz`: contains high quality reads with both forward and reverse tags surviving.
+   - `{sample_id}/{sample_id}_R[12]_unpaired.fastq.gz`: contains high quality reads with only forward or reverse tags surviving.
 
-**NOTE:** This results are not delivered to the researcher by default for disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.
-
+**NOTE:** This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.
 
 ## Alineamiento
 Se realiza el mapping con bwa. Los ficheros bam resultantes se pueden consultar en ../ANALYSIS/04-mapping. Las estadísticas del mapeo y cobertura obtenidos se pueden consultar en el mismo html report que para el control de calidad del fastq. 
