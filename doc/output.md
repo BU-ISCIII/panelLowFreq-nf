@@ -78,7 +78,7 @@ Samtools mpileup command is used for generate a pileup for one the BAM files. In
 - There is one folder per sample.
 - File:
    - `{sample_id}/{sample_id}.vcf` : file with variants detected by VarScan in vcf format.
-- Description of VarScan columns in its output can be found in [AnnexI](annexI)
+- Description of VarScan columns in its output can be found in [AnnexI](#annexI)
 
 ## Post-Analysis: annotation and filtering
 ### KGGSeq
@@ -98,7 +98,7 @@ Besides functional annotation some variant filtering is performed:
    - `{sample_id}/{sample_id}_annot.txt.log`: kggseq log.
    - `{sample_id}/{sample_id}_header.table`: intermediate file for header cleaning.
 
-- Description of kggseq columns in its output can be found in [Annex II](anexxII)
+- Description of kggseq columns in its output can be found in [Annex II](#anexxII)
 
 ## Annex I
 |Column|Name|
@@ -125,7 +125,7 @@ Besides functional annotation some variant filtering is performed:
 |SamplesNC|Number of samples not covered / not called|
 |SampleCalls|The calls for each sample in the mpileup, space-delimited|
 
-## AnnexII
+## Annex II
 |Column|Meaning|
 | --- | --- |
 |Chromosome|chromosome number|
