@@ -8,7 +8,7 @@ This document describes the output produced by the pipeline and location of outp
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
 * [FastQC](#fastqc) - read quality control
-* [Trimmomatic](#trimmomatic) - adapter and low quality trimming
+* [Trimmomatic](#trimming) - adapter and low quality trimming
 * [BWA](#bwa) - mapping against reference genome
 * [Picard](#picard) - enrichment and alignment metrics
 * [SAMtools](#samtools) - alignment result processing and variant calling.
@@ -37,6 +37,8 @@ Parameters included for trimming are:
 
 MultiQC reports the percentage of bases removed by trimming in bar plot showing percentage or reads trimmed in forward and reverse.
 
+**Note**:The FastQC plots displayed in the MultiQC report shows _untrimmed_ reads. They may contain adapter sequence and potentially regions with low quality. To see how your reads look after trimming, look at the FastQC reports in the ANALYSIS/{ANALYSIS_ID}/03-preprocQC directory.
+
 **Results directory**: ANALYSIS/{ANALYSIS_ID}/02-preprocessing
 - There is one folder per sample.
 - Files:
@@ -45,15 +47,43 @@ MultiQC reports the percentage of bases removed by trimming in bar plot showing 
 
 **NOTE:** This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.
 
-## Alineamiento
-Se realiza el mapping con bwa. Los ficheros bam resultantes se pueden consultar en ../ANALYSIS/04-mapping. Las estadísticas del mapeo y cobertura obtenidos se pueden consultar en el mismo html report que para el control de calidad del fastq. 
-Se realiza un análisis de cobertura, para ver el porcentaje de exoma cubierto a distintas profundidades con picard HsMetrics.
+## Mapping
+### BWA
+[BWA](http://bio-bwa.sourceforge.net/), or Burrows-Wheeler Aligner, is designed for mapping low-divergent sequence reads against reference genomes. The result alignment files are further processed with [SAMtools](http://samtools.sourceforge.net/), sam format is converted to bam, sorted and an index *.bai* is generated.
 
+**Results directory**: ANALYSIS/{ANALYSIS_ID}/04-mapping.
+- There is one folder per sample.
+- This files can be used in [IGV](https://software.broadinstitute.org/software/igv/) for alignment visualization.
+- Files:
+   - `{sample_id}/{sample_id}_sorted.bam` : sorted aligned bam file.
+   - `{sample_id}/{sample_id}_sorted.bam.bai`: index file for soreted aligned bam.
+   
 ## Variant Calling
-La llamada a variantes se realiza utilizando VarScan con el parámetro mpileup2cns, emitiendo sólo las posiciones variantes y con los siguientes parámetros --min-var-freq 0.05 --p-value 0.99, permitimos una frecuencia del alelo alternativo mínima de 0.05 y eliminamos el filtro del p-value para poder realizar los filtros luego manualmente y buscar la mayor cantidad de variantes posibles.
+### Samtools
+Samtools mpileup command is used for generate a pileup for one the BAM files. In the pileup format each line represents a genomic position, consisting of chromosome name, 1-based coordinate, reference base, the number of reads covering the site, read bases, base qualities and alignment mapping qualities. Information on match, mismatch, indel, strand, mapping quality and start and end of a read are all encoded at the read base column. This information is used by [VarScan](#varscan) for doing the proper variant calling step.
 
-## Post-Análisis: Anotación y filtrado
+**Results directory**: ANALYSIS/{ANALYSIS_ID}/06-samtools
+- There is a folder per sample.
+- Files:
+   - `{sample_id}/{sample_id}.pileup`: pileup format file.
+   
+**NOTE:** This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.
+
+### VarScan
+[VarScan](http://varscan.sourceforge.net/using-varscan.html) is used for variant calling using the command mpileup2cns with the following parameters:
+- --min-var-freq 0.05: output variants with minimum 0.05 alternate allele frequency (this paramter allow the detection of low frequency variants)
+- --p-value 0.99 : p-value filter is removed for posterior manual filtering.
+
+**Results directory:**: ANALYSIS/{ANALYSIS_ID}/07-VarScan
+- There is one folder per sample.
+- File:
+   - `{sample_id}/{sample_id}.vcf` : file with variants detected by VarScan in vcf format.
+
+## Post-Analysis: annotation and filtering
+### KGGSeq
+
 Para el post análisis de las variantes obtenidas se utiliza el software KGGSeq (Li, Gui, Kwan, Bao, & Sham, 2012), una herramienta diseñada para priorizar variantes en el estudio de enfermedades mendelianas. En resumen, se trata de una herramienta de anotación de variantes. Permite incluir información de efecto, gen, tránscrito, enfermedades conocidas relacionadas, artículos de pubmed, etc. 
+
 Además de las anotaciones funcionales y predictivas se realizan una serie de filtros: 
 - Depth < 4
 - GQ < 10.0
@@ -65,7 +95,7 @@ Los ficheros finales anotados con variantes se pueden encontrar en ..\ANALYSIS\0
 La explicación del significado de cada uno de los campos del excell se puede encontrar en: fields_description.xlsx
 
 
-## Bibliografía
+## Bibliography
 
 1. *Li, M.-X., Gui, H.-S., Kwan, J. S. H., Bao, S.-Y., & Sham, P. C. (2012). A comprehensive framework for prioritizing variants in exome sequencing studies of Mendelian diseases. Nucleic acids research, 40(7), e53. doi:10.1093/nar/gkr1257*
 
