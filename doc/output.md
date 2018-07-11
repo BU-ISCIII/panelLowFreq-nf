@@ -98,7 +98,7 @@ Besides functional annotation some variant filtering is performed:
    - `{sample_id}/{sample_id}_annot.txt.log`: kggseq log.
    - `{sample_id}/{sample_id}_header.table`: intermediate file for header cleaning.
 
-- Description of kggseq columns in its output can be found in [Annex II](#anexxII)
+- Description of kggseq columns in its output can be found in [Annex II](#annexII)
 
 ## Annex I
 |Column|Name|
