@@ -16,6 +16,8 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 * [KGGSeq](#kggseq) - variant annotation.
 * [MultiQC](#multiqc) - quality statistics summary
 
+> Each analysis folder contains a log folder with the log files for each process and each sample.
+
 ## Preprocessing
 ### FastQC
 Quality control is performed using [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). FastQC gives general quality metrics about your reads. It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C). You get information about adapter contamination and other overrepresented sequences.
@@ -57,6 +59,18 @@ MultiQC reports the percentage of bases removed by trimming in bar plot showing 
 - Files:
    - `{sample_id}/{sample_id}_sorted.bam` : sorted aligned bam file.
    - `{sample_id}/{sample_id}_sorted.bam.bai`: index file for soreted aligned bam.
+## Picard
+Metrics for the analysis of target-capture sequencing experiments are calculated with [Picard CollectHsMetrics](https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics). The metrics in this class fall broadly into three categories:
+
+- Basic sequencing metrics that are either generated as a baseline against which to evaluate other metrics or because they are used in the calculation of other metrics. This includes things like the genome size, the number of reads, the number of aligned reads etc.
+- Metrics that are intended for evaluating the performance of the wet-lab assay that generated the data. This group includes metrics like the number of bases mapping on/off/near baits, %selected, fold 80 base penalty, hs library size and the hs penalty metrics. These metrics are calculated prior to some of the filters are applied (e.g. low mapping quality reads, low base quality bases and bases overlapping in the middle of paired-end reads are all counted).
+- Metrics for assessing target coverage as a proxy for how well the data is likely to perform in downstream applications like variant calling. This group includes metrics like mean target coverage, the percentage of bases reaching various coverage levels, and the percentage of bases excluded by various filters. These metrics are computed using the strictest subset of the data, after all filters have been applied.
+
+**Results directory:** ANALYSIS/{ANALYSIS_ID}/99-stats/bamstats
+- Files:
+   - `hsMetrics_all.out` : summary of the some of the most meaningful columns in picard hsmetrics output for all the samples in the project.
+   - `{sample_id}_hsMetrics.out`: full picard hsmetrics output per sample.
+   - Description of Picard hsMetrics columns in its output can be found in [AnnexIII](#annex-iii)
    
 ## Variant Calling
 ### Samtools
@@ -78,7 +92,7 @@ Samtools mpileup command is used for generate a pileup for one the BAM files. In
 - There is one folder per sample.
 - File:
    - `{sample_id}/{sample_id}.vcf` : file with variants detected by VarScan in vcf format.
-- Description of VarScan columns in its output can be found in [AnnexI](annexI)
+- Description of VarScan columns in its output can be found in [AnnexI](#annex-i)
 
 ## Post-Analysis: annotation and filtering
 ### KGGSeq
@@ -98,7 +112,17 @@ Besides functional annotation some variant filtering is performed:
    - `{sample_id}/{sample_id}_annot.txt.log`: kggseq log.
    - `{sample_id}/{sample_id}_header.table`: intermediate file for header cleaning.
 
-- Description of kggseq columns in its output can be found in [Annex II](anexxII)
+- Description of kggseq columns in its output can be found in [Annex II](#annex-ii)
+
+# MultiQC
+[MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
+
+**Output directory:** ANALYSIS/{ANALYSIS_ID}/99-stats
+
+* `multiqc_report.html`: MultiQC report - a standalone HTML file that can be viewed in your web browser
+* `multiqc_data/`: Directory containing parsed statistics from the different tools used in the pipeline
+
+For more information about how to use MultiQC reports, see http://multiqc.info
 
 ## Annex I
 |Column|Name|
@@ -125,7 +149,7 @@ Besides functional annotation some variant filtering is performed:
 |SamplesNC|Number of samples not covered / not called|
 |SampleCalls|The calls for each sample in the mpileup, space-delimited|
 
-## AnnexII
+## Annex II
 |Column|Meaning|
 | --- | --- |
 |Chromosome|chromosome number|
@@ -177,9 +201,64 @@ Besides functional annotation some variant filtering is performed:
 |PubMedIDIdeogram|PubMed ID of articles in which the term and the cytogeneic position of the variant are co-mentioned|
 |PubMedIDGene|PubMed ID of articles in which the term and the gene containing the variant are co-mentioned|
 
+## Annex III
+
+|BAIT_SET|The name of the bait set used in the hybrid selection.|
+| --- | --- |
+|GENOME_SIZE|The number of bases in the reference genome used for alignment.|
+|BAIT_TERRITORY|The number of bases which are localized to one or more baits.|
+|TARGET_TERRITORY|The unique number of target bases in the experiment, where the target sequence is usually exons etc.|
+|BAIT_DESIGN_EFFICIENCY|The ratio of TARGET_TERRITORY/BAIT_TERRITORY. A value of 1 indicates a perfect design efficiency, while a valud of 0.5 indicates that half of bases within the bait region are not within the target region.|
+|TOTAL_READS|The total number of reads in the SAM or BAM file examined.|
+|PF_READS|The total number of reads that pass the vendor's filter.|
+|PF_UNIQUE_READS|The number of PF reads that are not marked as duplicates.|
+|PCT_PF_READS|The fraction of reads passing the vendor's filter, PF_READS/TOTAL_READS.|
+|PCT_PF_UQ_READS|The fraction of PF_UNIQUE_READS from the TOTAL_READS, PF_UNIQUE_READS/TOTAL_READS.|
+|PF_UQ_READS_ALIGNED|The number of PF_UNIQUE_READS that aligned to the reference genome with a mapping score > 0.|
+|PCT_PF_UQ_READS_ALIGNED|The fraction of PF_UQ_READS_ALIGNED from the total number of PF reads.|
+|PF_BASES_ALIGNED|The number of PF unique bases that are aligned to the reference genome with mapping scores > 0.|
+|PF_UQ_BASES_ALIGNED|The number of bases in the PF_UQ_READS_ALIGNED reads. Accounts for clipping and gaps.|
+|ON_BAIT_BASES|The number of PF_BASES_ALIGNED that are mapped to the baited regions of the genome.|
+|NEAR_BAIT_BASES|The number of PF_BASES_ALIGNED that are mapped to within a fixed interval containing a baited region, but not within the baited section per se.|
+|OFF_BAIT_BASES|The number of PF_BASES_ALIGNED that are mapped away from any baited region.|
+|ON_TARGET_BASES|The number of PF_BASES_ALIGNED that are mapped to a targeted region of the genome.|
+|PCT_SELECTED_BASES|The fraction of PF_BASES_ALIGNED located on or near a baited region (ON_BAIT_BASES + NEAR_BAIT_BASES)/PF_BASES_ALIGNED.|
+|PCT_OFF_BAIT|The fraction of PF_BASES_ALIGNED that are mapped away from any baited region, OFF_BAIT_BASES/PF_BASES_ALIGNED.|
+|ON_BAIT_VS_SELECTED|The fraction of bases on or near baits that are covered by baits, ON_BAIT_BASES/(ON_BAIT_BASES + NEAR_BAIT_BASES).|
+|MEAN_BAIT_COVERAGE|The mean coverage of all baits in the experiment.|
+|MEAN_TARGET_COVERAGE|The mean coverage of a target region.|
+|MEDIAN_TARGET_COVERAGE|The median coverage of a target region.|
+|MAX_TARGET_COVERAGE|The maximum coverage of reads that mapped to target regions of an experiment.|
+|PCT_USABLE_BASES_ON_BAIT|The number of aligned, de-duped, on-bait bases out of the PF bases available.|
+|PCT_USABLE_BASES_ON_TARGET|The number of aligned, de-duped, on-target bases out of all of the PF bases available.|
+|FOLD_ENRICHMENT|The fold by which the baited region has been amplified above genomic background.|
+|ZERO_CVG_TARGETS_PCT|The fraction of targets that did not reach coverage=1 over any base.|
+|PCT_EXC_DUPE|The fraction of aligned bases that were filtered out because they were in reads marked as duplicates.|
+|PCT_EXC_MAPQ|The fraction of aligned bases that were filtered out because they were in reads with low mapping quality.|
+|PCT_EXC_BASEQ|The fraction of aligned bases that were filtered out because they were of low base quality.|
+|PCT_EXC_OVERLAP|The fraction of aligned bases that were filtered out because they were the second observation from an insert with overlapping reads.|
+|PCT_EXC_OFF_TARGET|The fraction of aligned bases that were filtered out because they did not align over a target base.|
+|FOLD_80_BASE_PENALTY|The fold over-coverage necessary to raise 80% of bases in "non-zero-cvg" targets to the mean coverage level in those targets.|
+|PCT_TARGET_BASES_1X|The fraction of all target bases achieving 1X or greater coverage.|
+|PCT_TARGET_BASES_2X|The fraction of all target bases achieving 2X or greater coverage.|
+|PCT_TARGET_BASES_10X|The fraction of all target bases achieving 10X or greater coverage.|
+|PCT_TARGET_BASES_20X|The fraction of all target bases achieving 20X or greater coverage.|
+|PCT_TARGET_BASES_30X|The fraction of all target bases achieving 30X or greater coverage.|
+|PCT_TARGET_BASES_40X|The fraction of all target bases achieving 40X or greater coverage.|
+|PCT_TARGET_BASES_50X|The fraction of all target bases achieving 50X or greater coverage.|
+|PCT_TARGET_BASES_100X|The fraction of all target bases achieving 100X or greater coverage.|
+|HS_LIBRARY_SIZE|The estimated number of unique molecules in the selected part of the library.|
+|HS_PENALTY_10X|The "hybrid selection penalty" incurred to get 80% of target bases to 10X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 10X coverage I need to sequence until PF_ALIGNED_BASES = 10^7 * 10 * HS_PENALTY_10X.|
+|HS_PENALTY_20X|The "hybrid selection penalty" incurred to get 80% of target bases to 20X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 20X coverage I need to sequence until PF_ALIGNED_BASES = 10^7 * 20 * HS_PENALTY_20X.|
+|HS_PENALTY_30X|The "hybrid selection penalty" incurred to get 80% of target bases to 30X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 30X coverage I need to sequence until PF_ALIGNED_BASES = 10^7 * 30 * HS_PENALTY_30X.|
+|HS_PENALTY_40X|The "hybrid selection penalty" incurred to get 80% of target bases to 40X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 40X coverage I need to sequence until PF_ALIGNED_BASES = 10^7 * 40 * HS_PENALTY_40X.|
+|HS_PENALTY_50X|The "hybrid selection penalty" incurred to get 80% of target bases to 50X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 50X coverage I need to sequence until PF_ALIGNED_BASES = 10^7 * 50 * HS_PENALTY_50X.|
+|HS_PENALTY_100X|The "hybrid selection penalty" incurred to get 80% of target bases to 100X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 100X coverage I need to sequence until PF_ALIGNED_BASES = 10^7 * 100 * HS_PENALTY_100X.|
+|AT_DROPOUT|A measure of how undercovered <= 50% GC regions are relative to the mean. For each GC bin [0..50] we calculate a = % of target territory, and b = % of aligned reads aligned to these targets. AT DROPOUT is then abs(sum(a-b when a-b < 0)). E.g. if the value is 5% this implies that 5% of total reads that should have mapped to GC<=50% regions mapped elsewhere.|
+|GC_DROPOUT|A measure of how undercovered >= 50% GC regions are relative to the mean. For each GC bin [50..100] we calculate a = % of target territory, and b = % of aligned reads aligned to these targets. GC DROPOUT is then abs(sum(a-b when a-b < 0)). E.g. if the value is 5% this implies that 5% of total reads that should have mapped to GC>=50% regions mapped elsewhere.|
+|HET_SNP_SENSITIVITY|The theoretical HET SNP sensitivity.|
+|HET_SNP_Q|The Phred Scaled Q Score of the theoretical HET SNP sensitivity.|
 
 ## Bibliography
 
 1. *Li, M.-X., Gui, H.-S., Kwan, J. S. H., Bao, S.-Y., & Sham, P. C. (2012). A comprehensive framework for prioritizing variants in exome sequencing studies of Mendelian diseases. Nucleic acids research, 40(7), e53. doi:10.1093/nar/gkr1257*
-
-2. *McKenna, A., Hanna, M., Banks, E., Sivachenko, A., Cibulskis, K., Kernytsky, A., … DePristo, M. a. (2010). The Genome Analysis Toolkit: A MapReduce framework for analyzing next-generation DNA sequencing data. Genome Research, 20(9), 1297–1303. doi:10.1101/gr.107524.110.20*
