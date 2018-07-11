@@ -28,17 +28,11 @@
 |UnaffectedRefHomGtyNum|Number of unaffected individuals with reference homozygote at this variant;|
 |UnaffectedHetGtyNum|Number of unaffected individuals with heterozygote at this variant;|
 |UnaffectedAltHomGtyNum|Number of unaffected individuals with non-ref homozygote;|
-|DenovoMutationEvent|"n the main output file, there is a column named DenovoMutationEvent to record the genotypes of a child and his or her parents.|
-|Example: N140_0:0/1:46,59&N140_1:0/0:57,0&N140_2:0/0:68,0|
-|The child N140_0 has genotype 0/1 with 46 and 59 reads carrying reference alleles and alternative alleles respectively. The father N140_1 and mother N140_2 are homozygous 0/0."|
+|DenovoMutationEvent|"n the main output file, there is a column named DenovoMutationEvent to record the genotypes of a child and his or her parents. Example: N140_0:0/1:46,59&N140_1:0/0:57,0&N140_2:0/0:68,0. The child N140_0 has genotype 0/1 with 46 and 59 reads carrying reference alleles and alternative alleles respectively. The father N140_1 and mother N140_2 are homozygous 0/0."|
 |UniProtFeatureForRefGene|Annotate a variant of coding gene using the UniProt protein annotations.|
 |GeneDescription|Gene description|
 |Pseudogenes|Pseudogenes listed in http://tables.pseudogene.org/set.py?id=Human61|
-|DiseaseName(s)MIMid|"Disorder, <disorder MIM no.> (<phene mapping key>) Phenotype mapping method <phene mapping key>:|
-|1 - the disorder is placed on the map based on its association with a gene, but the underlying defect is not known.|
-|2 - the disorder has been placed on the map by linkage; no mutation has been found.|
-|3 - the molecular basis for the disorder is known; a mutation has been found in the gene.|
-|4 - a contiguous gene deletion or duplication syndrome, multiple genes are deleted or duplicated causing the phenotype."|
+|DiseaseName(s)MIMid|"Disorder, <disorder MIM no.> (<phene mapping key>) Phenotype mapping method <phene mapping key>:1 - the disorder is placed on the map based on its association with a gene, but the underlying defect is not known.2 - the disorder has been placed on the map by linkage; no mutation has been found. 3 - the molecular basis for the disorder is known; a mutation has been found in the gene.4 - a contiguous gene deletion or duplication syndrome, multiple genes are deleted or duplicated causing the phenotype."|
 |GeneMIMid|GeneMIMid : Gene/locus MIM no.|
 |SIFT_pred|SIFT prediction filter|
 |Polyphen2_HDIV_pred|"Polyphen2 prediction based on HumDiv, ""D"" (""porobably damaging""), ""P"" (""possibly damaging"") and ""B"" (""benign""). Multiple entries separated by "";"""|
