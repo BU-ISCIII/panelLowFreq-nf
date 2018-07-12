@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>Output description for panelLowFreq pipeline</title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+
+
+
+
+
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js" integrity="sha384-cs/chFZiN24E4KMATLdqdvsezGxaGsi4hLGOzlXwp5UZB1LY//20VyM2taTB4QvJ" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+ 
+body {
+  padding: 3em;
+  margin-right: 350px;
+  max-width: 100%;
+}
+#toc {
+  position: fixed;
+  right: 20px;
+  width: 300px;
+  padding-top: 20px;
+  overflow: scroll;
+  height: calc(100% - 3em - 20px);
+}
+#toc_header {
+  font-size: 1.8em;
+  font-weight: bold;
+}
+#toc > ul {
+  padding-left: 0;
+  list-style-type: none;
+}
+#toc > ul ul { padding-left: 20px; }
+#toc > ul > li > a { display: none; }
+img { max-width: 800px; }
+
+</style>
+
+
+
+</head>
+
+<body>
+<div id="toc">
+<div id="toc_header">Table of Contents</div>
+<ul>
+<li>
+<a href="#toc_0">Output description for panelLowFreq pipeline</a>
+<ul>
+<li>
+<a href="#toc_1">Pipeline overview:</a>
+</li>
+<li>
+<a href="#toc_2">Preprocessing</a>
+<ul>
+<li>
+<a href="#toc_3">FastQC</a>
+</li>
+<li>
+<a href="#toc_4">Trimming</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#toc_5">Mapping</a>
+<ul>
+<li>
+<a href="#toc_6">BWA</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#toc_7">Variant Calling</a>
+<ul>
+<li>
+<a href="#toc_8">Samtools</a>
+</li>
+<li>
+<a href="#toc_9">VarScan</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#toc_10">Post-Analysis: annotation and filtering</a>
+<ul>
+<li>
+<a href="#toc_11">KGGSeq</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<a href="#toc_12">MultiQC</a>
+<ul>
+<li>
+<a href="#toc_13">Annex I</a>
+</li>
+<li>
+<a href="#toc_14">Annex II</a>
+</li>
+<li>
+<a href="#toc_15">Annex III</a>
+</li>
+<li>
+<a href="#toc_16">Bibliography</a>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+
+
+<h1 id="toc_0">Output description for panelLowFreq pipeline</h1>
+
+<p><strong>panelLowFreq</strong> is a bioinformatics best-practice variant calling analysis pipeline used for WES-Seq (whole exome sequencing) or target sequencing. The pipeline focused in variant calling and annotation of candidate low frequency variants.</p>
+
+<p>This document describes the output produced by the pipeline and location of output files.</p>
+
+<h2 id="toc_1">Pipeline overview:</h2>
+
+<p>The pipeline is built using <a href="https://www.nextflow.io/">Nextflow</a> and processes data using the following steps:</p>
+
+<ul>
+<li><a href="#fastqc">FastQC</a> - read quality control</li>
+<li><a href="#trimming">Trimmomatic</a> - adapter and low quality trimming</li>
+<li><a href="#bwa">BWA</a> - mapping against reference genome</li>
+<li><a href="#picard">Picard</a> - enrichment and alignment metrics</li>
+<li><a href="#samtools">SAMtools</a> - alignment result processing and variant calling.</li>
+<li><a href="#varscan">VarScan</a> - variant calling.</li>
+<li><a href="#kggseq">KGGSeq</a> - variant annotation.</li>
+<li><a href="#multiqc">MultiQC</a> - quality statistics summary</li>
+</ul>
+
+<blockquote>
+<p>Each analysis folder contains a log folder with the log files for each process and each sample.</p>
+</blockquote>
+
+<h2 id="toc_2">Preprocessing</h2>
+
+<h3 id="toc_3">FastQC</h3>
+
+<p>Quality control is performed using <a href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FastQC</a>. FastQC gives general quality metrics about your reads. It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C). You get information about adapter contamination and other overrepresented sequences.
+For further reading and documentation see the <a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/">FastQC help</a>.</p>
+
+<p><strong>Results directory</strong>: ANALYSIS/{ANALYSIS_ID}/01-fastqc</p>
+
+<ul>
+<li>There is one folder per sample.</li>
+<li>Files:
+
+<ul>
+<li><code>{sample_id}/{sample_id}_R[12]_fastqc.html</code>: html report. This file can be opened in your favourite web browser (Firefox/chrome preferable) and it contains the different graphs that fastqc calculates for QC.</li>
+<li><code>{sample_id}/{sample_id}_R[12]_fastqc</code> : folder with fastqc output in plain text.</li>
+<li><code>{sample_id}/{sample_id}_R[12]_fastqc.zip</code>: zip compression of above folder.</li>
+</ul></li>
+</ul>
+
+<h3 id="toc_4">Trimming</h3>
+
+<p><a href="http://www.usadellab.org/cms/?page=trimmomatic">Trimmomatic</a> is used for removal of adapter contamination and trimming of low quality regions.
+Parameters included for trimming are:</p>
+
+<ul>
+<li> Nucleotides with phred quality &lt; 10 in 3&#39;end.</li>
+<li> Mean phred quality &lt; 15 in a 4 nucleotide window.</li>
+<li> Read lenght &lt; 70</li>
+</ul>
+
+<p>MultiQC reports the percentage of bases removed by trimming in bar plot showing percentage or reads trimmed in forward and reverse.</p>
+
+<p><strong>Note</strong>:The FastQC plots displayed in the MultiQC report shows <em>untrimmed</em> reads. They may contain adapter sequence and potentially regions with low quality. To see how your reads look after trimming, look at the FastQC reports in the ANALYSIS/{ANALYSIS_ID}/03-preprocQC directory.</p>
+
+<p><strong>Results directory</strong>: ANALYSIS/{ANALYSIS_ID}/02-preprocessing</p>
+
+<ul>
+<li>There is one folder per sample.</li>
+<li>Files:
+
+<ul>
+<li><code>{sample_id}/{sample_id}_R[12]_filtered.fastq.gz</code>: contains high quality reads with both forward and reverse tags surviving.</li>
+<li><code>{sample_id}/{sample_id}_R[12]_unpaired.fastq.gz</code>: contains high quality reads with only forward or reverse tags surviving.</li>
+</ul></li>
+</ul>
+
+<p><strong>NOTE:</strong> This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.</p>
+
+<h2 id="toc_5">Mapping</h2>
+
+<h3 id="toc_6">BWA</h3>
+
+<p><a href="http://bio-bwa.sourceforge.net/">BWA</a>, or Burrows-Wheeler Aligner, is designed for mapping low-divergent sequence reads against reference genomes. The result alignment files are further processed with <a href="http://samtools.sourceforge.net/">SAMtools</a>, sam format is converted to bam, sorted and an index <em>.bai</em> is generated.</p>
+
+<p><strong>Results directory</strong>: ANALYSIS/{ANALYSIS_ID}/04-mapping.</p>
+
+<ul>
+<li>There is one folder per sample.</li>
+<li>This files can be used in <a href="https://software.broadinstitute.org/software/igv/">IGV</a> for alignment visualization.</li>
+<li><p>Files:</p>
+
+<ul>
+<li><code>{sample_id}/{sample_id}_sorted.bam</code> : sorted aligned bam file.</li>
+<li><code>{sample_id}/{sample_id}_sorted.bam.bai</code>: index file for soreted aligned bam.
+## Picard
+Metrics for the analysis of target-capture sequencing experiments are calculated with <a href="https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics">Picard CollectHsMetrics</a>. The metrics in this class fall broadly into three categories:</li>
+</ul></li>
+<li><p>Basic sequencing metrics that are either generated as a baseline against which to evaluate other metrics or because they are used in the calculation of other metrics. This includes things like the genome size, the number of reads, the number of aligned reads etc.</p></li>
+<li><p>Metrics that are intended for evaluating the performance of the wet-lab assay that generated the data. This group includes metrics like the number of bases mapping on/off/near baits, %selected, fold 80 base penalty, hs library size and the hs penalty metrics. These metrics are calculated prior to some of the filters are applied (e.g. low mapping quality reads, low base quality bases and bases overlapping in the middle of paired-end reads are all counted).</p></li>
+<li><p>Metrics for assessing target coverage as a proxy for how well the data is likely to perform in downstream applications like variant calling. This group includes metrics like mean target coverage, the percentage of bases reaching various coverage levels, and the percentage of bases excluded by various filters. These metrics are computed using the strictest subset of the data, after all filters have been applied.</p></li>
+</ul>
+
+<p><strong>Results directory:</strong> ANALYSIS/{ANALYSIS_ID}/99-stats/bamstats</p>
+
+<ul>
+<li>Files:
+
+<ul>
+<li><code>hsMetrics_all.out</code> : summary of the some of the most meaningful columns in picard hsmetrics output for all the samples in the project.</li>
+<li><code>{sample_id}_hsMetrics.out</code>: full picard hsmetrics output per sample.</li>
+<li>Description of Picard hsMetrics columns in its output can be found in <a href="#annex-iii">AnnexIII</a></li>
+</ul></li>
+</ul>
+
+<h2 id="toc_7">Variant Calling</h2>
+
+<h3 id="toc_8">Samtools</h3>
+
+<p>Samtools mpileup command is used for generate a pileup for one the BAM files. In the pileup format each line represents a genomic position, consisting of chromosome name, 1-based coordinate, reference base, the number of reads covering the site, read bases, base qualities and alignment mapping qualities. Information on match, mismatch, indel, strand, mapping quality and start and end of a read are all encoded at the read base column. This information is used by <a href="#varscan">VarScan</a> for doing the proper variant calling step.</p>
+
+<p><strong>Results directory</strong>: ANALYSIS/{ANALYSIS_ID}/06-samtools</p>
+
+<ul>
+<li>There is a folder per sample.</li>
+<li>Files:
+
+<ul>
+<li><code>{sample_id}/{sample_id}.pileup</code>: pileup format file.</li>
+</ul></li>
+</ul>
+
+<p><strong>NOTE:</strong> This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.</p>
+
+<h3 id="toc_9">VarScan</h3>
+
+<p><a href="http://varscan.sourceforge.net/using-varscan.html">VarScan</a> is used for variant calling using the command mpileup2cns with the following parameters:</p>
+
+<ul>
+<li>--min-var-freq 0.05: output variants with minimum 0.05 alternate allele frequency (this paramter allow the detection of low frequency variants)</li>
+<li>--p-value 0.99 : p-value filter is removed for posterior manual filtering.</li>
+</ul>
+
+<p><strong>Results directory:</strong>: ANALYSIS/{ANALYSIS_ID}/07-VarScan</p>
+
+<ul>
+<li>There is one folder per sample.</li>
+<li>File:
+
+<ul>
+<li><code>{sample_id}/{sample_id}.vcf</code> : file with variants detected by VarScan in vcf format.</li>
+</ul></li>
+<li>Description of VarScan columns in its output can be found in <a href="#annex-i">AnnexI</a></li>
+</ul>
+
+<h2 id="toc_10">Post-Analysis: annotation and filtering</h2>
+
+<h3 id="toc_11">KGGSeq</h3>
+
+<p><a href="http://grass.cgs.hku.hk/limx/kggseq/">KGGSeq</a> is used for variant annotation, a tool design for variant priorization in the study of mendelian diseases.</p>
+
+<p>Besides functional annotation some variant filtering is performed:</p>
+
+<ul>
+<li>Depth &lt; 4</li>
+<li>GQ &lt; 10.0</li>
+<li>PL &lt; 20</li>
+<li>Sequencing quality &lt; 50.0</li>
+<li>Population frequency in ANY database (ESP5400,dbsnp141,1kg201305,exac) &gt; 0.005</li>
+</ul>
+
+<p><strong>Results directory</strong>: ANALYSIS/{ANALYSS}09-annotation/</p>
+
+<ul>
+<li><p>Files:</p>
+
+<ul>
+<li><code>{sample_id}/{sample_id}_all_annotated.tab</code> : final file for researcher examination. it includes all VarScan information and all annotation information by KGGSeq.</li>
+<li><code>{sample_id}/{sample_id}_annot.txt.flt.txt</code> : tab column file with KGGSeq annotation.</li>
+<li><code>{sample_id}/{sample_id}_annot.txt.log</code>: kggseq log.</li>
+<li><code>{sample_id}/{sample_id}_header.table</code>: intermediate file for header cleaning.</li>
+</ul></li>
+<li><p>Description of kggseq columns in its output can be found in <a href="#annex-ii">Annex II</a></p></li>
+</ul>
+
+<h1 id="toc_12">MultiQC</h1>
+
+<p><a href="http://multiqc.info">MultiQC</a> is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.</p>
+
+<p><strong>Output directory:</strong> ANALYSIS/{ANALYSIS_ID}/99-stats</p>
+
+<ul>
+<li><code>multiqc_report.html</code>: MultiQC report - a standalone HTML file that can be viewed in your web browser</li>
+<li><code>multiqc_data/</code>: Directory containing parsed statistics from the different tools used in the pipeline</li>
+</ul>
+
+<p>For more information about how to use MultiQC reports, see <a href="http://multiqc.info">http://multiqc.info</a></p>
+
+<h2 id="toc_13">Annex I</h2>
+
+<div class="tables-start"></div>
+
+<table><thead>
+<tr>
+<th>Column</th>
+<th>Name</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>Chrom</td>
+<td>chromosome name</td>
+</tr>
+<tr>
+<td>Position</td>
+<td>position (1-based)</td>
+</tr>
+<tr>
+<td>Ref</td>
+<td>reference allele at this position</td>
+</tr>
+<tr>
+<td>Var</td>
+<td>variant allele observed</td>
+</tr>
+<tr>
+<td>PoolCall</td>
+<td>Cross-sample call using all data (Cons:Cov:Reads1:Reads2:Freq:P-value)</td>
+</tr>
+<tr>
+<td></td>
+<td>Cons – consensus genotype in IUPAC format</td>
+</tr>
+<tr>
+<td></td>
+<td>Cov - total depth of coverage</td>
+</tr>
+<tr>
+<td></td>
+<td>Reads1 - number of reads supporting reference</td>
+</tr>
+<tr>
+<td></td>
+<td>Reads2 - number of reads supporting variant</td>
+</tr>
+<tr>
+<td></td>
+<td>P-value - FET p-value of observed reads vs expected non-variant</td>
+</tr>
+<tr>
+<td>StrandFilt</td>
+<td>Information to look for strand bias using all reads, format R1+:R1-:R2+:R2-:pval</td>
+</tr>
+<tr>
+<td></td>
+<td>R1+ = reference supporting reads on forward strand</td>
+</tr>
+<tr>
+<td></td>
+<td>R1- = reference supporting reads on reverse strand</td>
+</tr>
+<tr>
+<td></td>
+<td>R2+ = variant supporting reads on forward strand</td>
+</tr>
+<tr>
+<td></td>
+<td>R2- = variant supporting reads on reverse strand</td>
+</tr>
+<tr>
+<td></td>
+<td>pval = FET p-value for strand distribution, R1 versus R2</td>
+</tr>
+<tr>
+<td>SamplesRef</td>
+<td>Number of samples called reference (wildtype)</td>
+</tr>
+<tr>
+<td>SamplesHet</td>
+<td>Number of samples called heterozygous-variant</td>
+</tr>
+<tr>
+<td>SamplesHom</td>
+<td>Number of samples called homozygous-variant</td>
+</tr>
+<tr>
+<td>SamplesNC</td>
+<td>Number of samples not covered / not called</td>
+</tr>
+<tr>
+<td>SampleCalls</td>
+<td>The calls for each sample in the mpileup, space-delimited</td>
+</tr>
+</tbody></table>
+
+<div class="tables-end"></div>
+
+<h2 id="toc_14">Annex II</h2>
+
+<div class="tables-start"></div>
+
+<table><thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>Chromosome</td>
+<td>chromosome number</td>
+</tr>
+<tr>
+<td>StartPosition</td>
+<td>Human genome reference position</td>
+</tr>
+<tr>
+<td>ReferenceAlternativeAllele</td>
+<td>reference/alternative allele</td>
+</tr>
+<tr>
+<td>rsID</td>
+<td>SNP rs ID</td>
+</tr>
+<tr>
+<td>MostImportantFeatureGene</td>
+<td>Gene Symbol</td>
+</tr>
+<tr>
+<td>MostImportantGeneFeature</td>
+<td>Gene feature {missense,intronic, ncRNA, etc}</td>
+</tr>
+<tr>
+<td>RefGeneFeatures</td>
+<td>Gene Features {codons,transcripts,etc}</td>
+</tr>
+<tr>
+<td>SLR</td>
+<td>Sitewise Likelihood-ratio (SLR) test statistic for testing natural selection on codons. A negative value indicates negative selection, and a positive value indicates positive selection. Larger magnitude of the value suggests stronger evidence.</td>
+</tr>
+<tr>
+<td>SIFT_score</td>
+<td>SIFT uses the &#39;Sorting Tolerant From Intolerant&#39; (SIFT) algorithm to predict whether a single amino acid substitution affects protein function or not, based on the assumption that important amino acids in a protein sequence should be conserved throughout evolution and substitutions at highly conserved sites are expected to affect protein function.A small scoreindicates a high chance for a substitutionto damage the protein function.</td>
+</tr>
+<tr>
+<td>Polyphen2_HDIV_score</td>
+<td>&quot;Polyphen2 score based on HumDiv, i.e. hdiv_prob. The score ranges from 0 to 1, and the corresponding prediction is &quot;&quot;probably damaging&quot;&quot; if it is in [0.957,1]; &quot;&quot;possibly damaging&quot;&quot; if it is in [0.453,0.956]; &quot;&quot;benign&quot;&quot; if it is in [0,0.452]. Score cutoff for binary classification is 0.5, i.e. the prediction is &quot;&quot;neutral&quot;&quot; if the score is smaller than 0.5 and &quot;&quot;deleterious&quot;&quot; if the score is larger than 0.5. Multiple entries separated by &quot;&quot;;&quot;&quot;&quot;</td>
+</tr>
+<tr>
+<td>Polyphen2_HVAR_score</td>
+<td>Polyphen2 predicts the possible impact of an amino acid substitution on the structure and function of a human protein using straightforward physical and comparative considerations by an iterative greedy algorithm. In the present study, we use the original scores generated by the HumVar (instead ofHumDiv) trained model as it is preferred for the diagnosis of Mendelian diseases. The scores range from 0 to 1. A substitution with larger score has a higher possibility to damage the protein function.</td>
+</tr>
+<tr>
+<td>LRT_score</td>
+<td>LRT employed a likelihood ratio test to assess variant deleteriousnessbased on a comparative genomics data set of 32 vertebrate species. The identified deleterious mutations could disrupt highly conserved amino acids within protein-coding sequences, which are likely to be unconditionally deleterious.The scores range from 0 to 1. A larger score indicates a larger deleterious effect.</td>
+</tr>
+<tr>
+<td>MutationTaster_score</td>
+<td>MutationTaster assesses the impact of the disease-causing potential of a sequence variant by a naive Bayes classifier using multiple resources such as evolutionary conservation, splice-site changes, loss of protein features and changes that might affect mRNA level. The scores range from 0 to 1. The larger score suggests a higher probability to cause a human disease.</td>
+</tr>
+<tr>
+<td>MutationAssessor_score</td>
+<td>&quot;MutationAssessor &quot;&quot;functional impact of a variant : predicted functional (high, medium), predicted non-functional (low, neutral)&quot;&quot; Please refer to Reva et al. Nucl. Acids Res. (2011) 39(17):e118 for details&quot;</td>
+</tr>
+<tr>
+<td>FATHMM_score</td>
+<td>&quot;FATHMM default score (weighted for human inherited-disease mutations with Disease Ontology); If a score is smaller than -1.5 the corresponding NS is predicted as &quot;&quot;D(AMAGING)&quot;&quot;; otherwise it is predicted as &quot;&quot;T(OLERATED)&quot;&quot;. If there&#39;s more than one scores associated with the same NS due to isoforms, the smallest score (most damaging) was used. Please refer to Shihab et al Hum. Mut. (2013) 34(1):57-65 for details&quot;</td>
+</tr>
+<tr>
+<td>VEST3</td>
+<td>VEST 3.0 score. Score ranges from 0 to 1. The larger the score the more likely the mutation may cause functional change. In case there are multiple scores for the same variant, the largest score (most damaging) is presented. Please refer to Carter et al., (2013) BMC Genomics. 14(3) 1-16 for details. Please note this score is free for non-commercial use. For more details please refer to <a href="http://wiki.chasmsoftware.org/index.php/SoftwareLicense">http://wiki.chasmsoftware.org/index.php/SoftwareLicense</a>. Commercial users should contact the Johns Hopkins Technology Transfer office.</td>
+</tr>
+<tr>
+<td>CADD_score</td>
+<td>Combined Annotation Dependent Depletion (CADD) score for funtional prediction of a SNP. Please refer to Kircher et al. (2014) Nature Genetics 46(3):310-5  for details. The larger the score the more likely the SNP has damaging effect.</td>
+</tr>
+<tr>
+<td>GERP++_NR</td>
+<td>Neutral rate</td>
+</tr>
+<tr>
+<td>GERP++_RS</td>
+<td>RS score, the larger the score, the more conserved the site</td>
+</tr>
+<tr>
+<td>phyloP</td>
+<td>PhyloP estimates the evolutional conservation at each variant from multiple alignments of placental mammal genomes to the human genome based on a phylogenetic hidden Markov model.</td>
+</tr>
+<tr>
+<td>29way_logOdds</td>
+<td>SiPhy score based on 29 mammals genomes. The larger the score, the more conserved the site.</td>
+</tr>
+<tr>
+<td>LRT_Omega</td>
+<td>Estimated nonsynonymous-to-synonymous-rate ratio ( reported by LRT)</td>
+</tr>
+<tr>
+<td>AffectedRefHomGtyNum</td>
+<td>Number of affected individuals with reference homozygote at this variant;</td>
+</tr>
+<tr>
+<td>AffectedHetGtyNum</td>
+<td>Number of affected individuals with heterozygote at this variant;</td>
+</tr>
+<tr>
+<td>AffectedAltHomGtyNum</td>
+<td>Number of affected individuals with non-ref homozygote;</td>
+</tr>
+<tr>
+<td>UnaffectedRefHomGtyNum</td>
+<td>Number of unaffected individuals with reference homozygote at this variant;</td>
+</tr>
+<tr>
+<td>UnaffectedHetGtyNum</td>
+<td>Number of unaffected individuals with heterozygote at this variant;</td>
+</tr>
+<tr>
+<td>UnaffectedAltHomGtyNum</td>
+<td>Number of unaffected individuals with non-ref homozygote;</td>
+</tr>
+<tr>
+<td>DenovoMutationEvent</td>
+<td>&quot;n the main output file, there is a column named DenovoMutationEvent to record the genotypes of a child and his or her parents. Example: N140_0:0/1:46,59&amp;N140_1:0/0:57,0&amp;N140_2:0/0:68,0. The child N140_0 has genotype 0/1 with 46 and 59 reads carrying reference alleles and alternative alleles respectively. The father N140_1 and mother N140_2 are homozygous 0/0.&quot;</td>
+</tr>
+<tr>
+<td>UniProtFeatureForRefGene</td>
+<td>Annotate a variant of coding gene using the UniProt protein annotations.</td>
+</tr>
+<tr>
+<td>GeneDescription</td>
+<td>Gene description</td>
+</tr>
+<tr>
+<td>Pseudogenes</td>
+<td>Pseudogenes listed in <a href="http://tables.pseudogene.org/set.py?id=Human61">http://tables.pseudogene.org/set.py?id=Human61</a></td>
+</tr>
+<tr>
+<td>DiseaseName(s)MIMid</td>
+<td>&quot;Disorder, <disorder MIM no.> (<phene mapping key>) Phenotype mapping method <phene mapping key>:1 - the disorder is placed on the map based on its association with a gene, but the underlying defect is not known.2 - the disorder has been placed on the map by linkage; no mutation has been found. 3 - the molecular basis for the disorder is known; a mutation has been found in the gene.4 - a contiguous gene deletion or duplication syndrome, multiple genes are deleted or duplicated causing the phenotype.&quot;</td>
+</tr>
+<tr>
+<td>GeneMIMid</td>
+<td>GeneMIMid : Gene/locus MIM no.</td>
+</tr>
+<tr>
+<td>SIFT_pred</td>
+<td>SIFT prediction filter</td>
+</tr>
+<tr>
+<td>Polyphen2_HDIV_pred</td>
+<td>&quot;Polyphen2 prediction based on HumDiv, &quot;&quot;D&quot;&quot; (&quot;&quot;porobably damaging&quot;&quot;), &quot;&quot;P&quot;&quot; (&quot;&quot;possibly damaging&quot;&quot;) and &quot;&quot;B&quot;&quot; (&quot;&quot;benign&quot;&quot;). Multiple entries separated by &quot;&quot;;&quot;&quot;&quot;</td>
+</tr>
+<tr>
+<td>Polyphen2_HVAR_pred</td>
+<td>&quot;Polyphen2 prediction based on HumVar, &quot;&quot;D&quot;&quot; (&quot;&quot;porobably damaging&quot;&quot;), &quot;&quot;P&quot;&quot; (&quot;&quot;possibly damaging&quot;&quot;) and &quot;&quot;B&quot;&quot; (&quot;&quot;benign&quot;&quot;). Multiple entries separated by &quot;&quot;;&quot;&quot;&quot;</td>
+</tr>
+<tr>
+<td>LRT_pred</td>
+<td>Classification using LRT (D = deleterious, N = neutral, or U = unknown)</td>
+</tr>
+<tr>
+<td>MutationTaster_pred</td>
+<td>Classification using MutationTaster (A = disease_causing_automatic, D = disease_causing, N = polymorphism, or P = polymorphism_automatic)</td>
+</tr>
+<tr>
+<td>MutationAssessor_pred</td>
+<td>&quot;MutationAssessor &quot;&quot;functional impact of a variant : predicted functional (high, medium), predicted non-functional (low, neutral)&quot;&quot;&quot;</td>
+</tr>
+<tr>
+<td>FATHMM_pred</td>
+<td>FATHMM prediction filter.</td>
+</tr>
+<tr>
+<td>DiseaseCausalProb_ExoVarTrainedModel</td>
+<td>Conditional probability of being Mendelian disease-causing given the above prediction scores under a logistic regression model trained by our dataset ExoVar.</td>
+</tr>
+<tr>
+<td>IsRareDiseaseCausal_ExoVarTrainedModel</td>
+<td>Classification using the logistic regression model (Y = disease-causing or N = neutral)</td>
+</tr>
+<tr>
+<td>BestCombinedTools:OptimalCutoff:TP:TN</td>
+<td>The subset of original prediction tools (out of the 13 tools) used for the combined prediction by our Logistic Regression model which have the largest posterior probability among all possible combinatorial subsets: the cutoff leads to the maximal Matthews correlation coefficient (MCC): the corresponding true positive and true negative at the maximal MCC.</td>
+</tr>
+<tr>
+<td>TFBSconsSite[tfbsName:rawScore:zScore]</td>
+<td>Conserved TFBSs in the UCSC genome browser</td>
+</tr>
+<tr>
+<td>vistaEnhancer[enhancerName:positive/negative]</td>
+<td>Known enhancers in the VISTA enhancer browser</td>
+</tr>
+<tr>
+<td>PubMedIDIdeogram</td>
+<td>PubMed ID of articles in which the term and the cytogeneic position of the variant are co-mentioned</td>
+</tr>
+<tr>
+<td>PubMedIDGene</td>
+<td>PubMed ID of articles in which the term and the gene containing the variant are co-mentioned</td>
+</tr>
+</tbody></table>
+
+<div class="tables-end"></div>
+
+<h2 id="toc_15">Annex III</h2>
+
+<div class="tables-start"></div>
+
+<table><thead>
+<tr>
+<th>BAIT_SET</th>
+<th>The name of the bait set used in the hybrid selection.</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>GENOME_SIZE</td>
+<td>The number of bases in the reference genome used for alignment.</td>
+</tr>
+<tr>
+<td>BAIT_TERRITORY</td>
+<td>The number of bases which are localized to one or more baits.</td>
+</tr>
+<tr>
+<td>TARGET_TERRITORY</td>
+<td>The unique number of target bases in the experiment, where the target sequence is usually exons etc.</td>
+</tr>
+<tr>
+<td>BAIT_DESIGN_EFFICIENCY</td>
+<td>The ratio of TARGET_TERRITORY/BAIT_TERRITORY. A value of 1 indicates a perfect design efficiency, while a valud of 0.5 indicates that half of bases within the bait region are not within the target region.</td>
+</tr>
+<tr>
+<td>TOTAL_READS</td>
+<td>The total number of reads in the SAM or BAM file examined.</td>
+</tr>
+<tr>
+<td>PF_READS</td>
+<td>The total number of reads that pass the vendor&#39;s filter.</td>
+</tr>
+<tr>
+<td>PF_UNIQUE_READS</td>
+<td>The number of PF reads that are not marked as duplicates.</td>
+</tr>
+<tr>
+<td>PCT_PF_READS</td>
+<td>The fraction of reads passing the vendor&#39;s filter, PF_READS/TOTAL_READS.</td>
+</tr>
+<tr>
+<td>PCT_PF_UQ_READS</td>
+<td>The fraction of PF_UNIQUE_READS from the TOTAL_READS, PF_UNIQUE_READS/TOTAL_READS.</td>
+</tr>
+<tr>
+<td>PF_UQ_READS_ALIGNED</td>
+<td>The number of PF_UNIQUE_READS that aligned to the reference genome with a mapping score &gt; 0.</td>
+</tr>
+<tr>
+<td>PCT_PF_UQ_READS_ALIGNED</td>
+<td>The fraction of PF_UQ_READS_ALIGNED from the total number of PF reads.</td>
+</tr>
+<tr>
+<td>PF_BASES_ALIGNED</td>
+<td>The number of PF unique bases that are aligned to the reference genome with mapping scores &gt; 0.</td>
+</tr>
+<tr>
+<td>PF_UQ_BASES_ALIGNED</td>
+<td>The number of bases in the PF_UQ_READS_ALIGNED reads. Accounts for clipping and gaps.</td>
+</tr>
+<tr>
+<td>ON_BAIT_BASES</td>
+<td>The number of PF_BASES_ALIGNED that are mapped to the baited regions of the genome.</td>
+</tr>
+<tr>
+<td>NEAR_BAIT_BASES</td>
+<td>The number of PF_BASES_ALIGNED that are mapped to within a fixed interval containing a baited region, but not within the baited section per se.</td>
+</tr>
+<tr>
+<td>OFF_BAIT_BASES</td>
+<td>The number of PF_BASES_ALIGNED that are mapped away from any baited region.</td>
+</tr>
+<tr>
+<td>ON_TARGET_BASES</td>
+<td>The number of PF_BASES_ALIGNED that are mapped to a targeted region of the genome.</td>
+</tr>
+<tr>
+<td>PCT_SELECTED_BASES</td>
+<td>The fraction of PF_BASES_ALIGNED located on or near a baited region (ON_BAIT_BASES + NEAR_BAIT_BASES)/PF_BASES_ALIGNED.</td>
+</tr>
+<tr>
+<td>PCT_OFF_BAIT</td>
+<td>The fraction of PF_BASES_ALIGNED that are mapped away from any baited region, OFF_BAIT_BASES/PF_BASES_ALIGNED.</td>
+</tr>
+<tr>
+<td>ON_BAIT_VS_SELECTED</td>
+<td>The fraction of bases on or near baits that are covered by baits, ON_BAIT_BASES/(ON_BAIT_BASES + NEAR_BAIT_BASES).</td>
+</tr>
+<tr>
+<td>MEAN_BAIT_COVERAGE</td>
+<td>The mean coverage of all baits in the experiment.</td>
+</tr>
+<tr>
+<td>MEAN_TARGET_COVERAGE</td>
+<td>The mean coverage of a target region.</td>
+</tr>
+<tr>
+<td>MEDIAN_TARGET_COVERAGE</td>
+<td>The median coverage of a target region.</td>
+</tr>
+<tr>
+<td>MAX_TARGET_COVERAGE</td>
+<td>The maximum coverage of reads that mapped to target regions of an experiment.</td>
+</tr>
+<tr>
+<td>PCT_USABLE_BASES_ON_BAIT</td>
+<td>The number of aligned, de-duped, on-bait bases out of the PF bases available.</td>
+</tr>
+<tr>
+<td>PCT_USABLE_BASES_ON_TARGET</td>
+<td>The number of aligned, de-duped, on-target bases out of all of the PF bases available.</td>
+</tr>
+<tr>
+<td>FOLD_ENRICHMENT</td>
+<td>The fold by which the baited region has been amplified above genomic background.</td>
+</tr>
+<tr>
+<td>ZERO_CVG_TARGETS_PCT</td>
+<td>The fraction of targets that did not reach coverage=1 over any base.</td>
+</tr>
+<tr>
+<td>PCT_EXC_DUPE</td>
+<td>The fraction of aligned bases that were filtered out because they were in reads marked as duplicates.</td>
+</tr>
+<tr>
+<td>PCT_EXC_MAPQ</td>
+<td>The fraction of aligned bases that were filtered out because they were in reads with low mapping quality.</td>
+</tr>
+<tr>
+<td>PCT_EXC_BASEQ</td>
+<td>The fraction of aligned bases that were filtered out because they were of low base quality.</td>
+</tr>
+<tr>
+<td>PCT_EXC_OVERLAP</td>
+<td>The fraction of aligned bases that were filtered out because they were the second observation from an insert with overlapping reads.</td>
+</tr>
+<tr>
+<td>PCT_EXC_OFF_TARGET</td>
+<td>The fraction of aligned bases that were filtered out because they did not align over a target base.</td>
+</tr>
+<tr>
+<td>FOLD_80_BASE_PENALTY</td>
+<td>The fold over-coverage necessary to raise 80% of bases in &quot;non-zero-cvg&quot; targets to the mean coverage level in those targets.</td>
+</tr>
+<tr>
+<td>PCT_TARGET_BASES_1X</td>
+<td>The fraction of all target bases achieving 1X or greater coverage.</td>
+</tr>
+<tr>
+<td>PCT_TARGET_BASES_2X</td>
+<td>The fraction of all target bases achieving 2X or greater coverage.</td>
+</tr>
+<tr>
+<td>PCT_TARGET_BASES_10X</td>
+<td>The fraction of all target bases achieving 10X or greater coverage.</td>
+</tr>
+<tr>
+<td>PCT_TARGET_BASES_20X</td>
+<td>The fraction of all target bases achieving 20X or greater coverage.</td>
+</tr>
+<tr>
+<td>PCT_TARGET_BASES_30X</td>
+<td>The fraction of all target bases achieving 30X or greater coverage.</td>
+</tr>
+<tr>
+<td>PCT_TARGET_BASES_40X</td>
+<td>The fraction of all target bases achieving 40X or greater coverage.</td>
+</tr>
+<tr>
+<td>PCT_TARGET_BASES_50X</td>
+<td>The fraction of all target bases achieving 50X or greater coverage.</td>
+</tr>
+<tr>
+<td>PCT_TARGET_BASES_100X</td>
+<td>The fraction of all target bases achieving 100X or greater coverage.</td>
+</tr>
+<tr>
+<td>HS_LIBRARY_SIZE</td>
+<td>The estimated number of unique molecules in the selected part of the library.</td>
+</tr>
+<tr>
+<td>HS_PENALTY_10X</td>
+<td>The &quot;hybrid selection penalty&quot; incurred to get 80% of target bases to 10X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 10X coverage I need to sequence until PF_ALIGNED_BASES = 10<sup>7</sup> * 10 * HS_PENALTY_10X.</td>
+</tr>
+<tr>
+<td>HS_PENALTY_20X</td>
+<td>The &quot;hybrid selection penalty&quot; incurred to get 80% of target bases to 20X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 20X coverage I need to sequence until PF_ALIGNED_BASES = 10<sup>7</sup> * 20 * HS_PENALTY_20X.</td>
+</tr>
+<tr>
+<td>HS_PENALTY_30X</td>
+<td>The &quot;hybrid selection penalty&quot; incurred to get 80% of target bases to 30X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 30X coverage I need to sequence until PF_ALIGNED_BASES = 10<sup>7</sup> * 30 * HS_PENALTY_30X.</td>
+</tr>
+<tr>
+<td>HS_PENALTY_40X</td>
+<td>The &quot;hybrid selection penalty&quot; incurred to get 80% of target bases to 40X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 40X coverage I need to sequence until PF_ALIGNED_BASES = 10<sup>7</sup> * 40 * HS_PENALTY_40X.</td>
+</tr>
+<tr>
+<td>HS_PENALTY_50X</td>
+<td>The &quot;hybrid selection penalty&quot; incurred to get 80% of target bases to 50X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 50X coverage I need to sequence until PF_ALIGNED_BASES = 10<sup>7</sup> * 50 * HS_PENALTY_50X.</td>
+</tr>
+<tr>
+<td>HS_PENALTY_100X</td>
+<td>The &quot;hybrid selection penalty&quot; incurred to get 80% of target bases to 100X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 100X coverage I need to sequence until PF_ALIGNED_BASES = 10<sup>7</sup> * 100 * HS_PENALTY_100X.</td>
+</tr>
+<tr>
+<td>AT_DROPOUT</td>
+<td>A measure of how undercovered &lt;= 50% GC regions are relative to the mean. For each GC bin [0..50] we calculate a = % of target territory, and b = % of aligned reads aligned to these targets. AT DROPOUT is then abs(sum(a-b when a-b &lt; 0)). E.g. if the value is 5% this implies that 5% of total reads that should have mapped to GC&lt;=50% regions mapped elsewhere.</td>
+</tr>
+<tr>
+<td>GC_DROPOUT</td>
+<td>A measure of how undercovered &gt;= 50% GC regions are relative to the mean. For each GC bin [50..100] we calculate a = % of target territory, and b = % of aligned reads aligned to these targets. GC DROPOUT is then abs(sum(a-b when a-b &lt; 0)). E.g. if the value is 5% this implies that 5% of total reads that should have mapped to GC&gt;=50% regions mapped elsewhere.</td>
+</tr>
+<tr>
+<td>HET_SNP_SENSITIVITY</td>
+<td>The theoretical HET SNP sensitivity.</td>
+</tr>
+<tr>
+<td>HET_SNP_Q</td>
+<td>The Phred Scaled Q Score of the theoretical HET SNP sensitivity.</td>
+</tr>
+</tbody></table>
+
+<div class="tables-end"></div>
+
+<h2 id="toc_16">Bibliography</h2>
+
+<ol>
+<li><em>Li, M.-X., Gui, H.-S., Kwan, J. S. H., Bao, S.-Y., &amp; Sham, P. C. (2012). A comprehensive framework for prioritizing variants in exome sequencing studies of Mendelian diseases. Nucleic acids research, 40(7), e53. doi:10.1093/nar/gkr1257</em></li>
+</ol>
+
+</body>
+
+<script type="text/javascript">
+(function() {
+    $('div.tables-start').nextUntil('div.tables-end', 'table').addClass('table table-bordered');
+})();
+</script>
+</html>

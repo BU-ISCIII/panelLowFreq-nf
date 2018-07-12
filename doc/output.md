@@ -31,7 +31,7 @@ For further reading and documentation see the [FastQC help](http://www.bioinform
    - `{sample_id}/{sample_id}_R[12]_fastqc.zip`: zip compression of above folder.
 
 ### Trimming
-[Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) is used for removal of adapter contamination and trimming of low quality regions. 
+[Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) is used for removal of adapter contamination and trimming of low quality regions.
 Parameters included for trimming are:
 -  Nucleotides with phred quality < 10 in 3'end.
 -  Mean phred quality < 15 in a 4 nucleotide window.
@@ -71,7 +71,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
    - `hsMetrics_all.out` : summary of the some of the most meaningful columns in picard hsmetrics output for all the samples in the project.
    - `{sample_id}_hsMetrics.out`: full picard hsmetrics output per sample.
    - Description of Picard hsMetrics columns in its output can be found in [AnnexIII](#annex-iii)
-   
+
 ## Variant Calling
 ### Samtools
 Samtools mpileup command is used for generate a pileup for one the BAM files. In the pileup format each line represents a genomic position, consisting of chromosome name, 1-based coordinate, reference base, the number of reads covering the site, read bases, base qualities and alignment mapping qualities. Information on match, mismatch, indel, strand, mapping quality and start and end of a read are all encoded at the read base column. This information is used by [VarScan](#varscan) for doing the proper variant calling step.
@@ -80,7 +80,7 @@ Samtools mpileup command is used for generate a pileup for one the BAM files. In
 - There is a folder per sample.
 - Files:
    - `{sample_id}/{sample_id}.pileup`: pileup format file.
-   
+
 **NOTE:** This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.
 
 ### VarScan
@@ -125,6 +125,7 @@ Besides functional annotation some variant filtering is performed:
 For more information about how to use MultiQC reports, see http://multiqc.info
 
 ## Annex I
+<div class="tables-start"></div>
 |Column|Name|
 | --- | --- |
 |Chrom|chromosome name|
@@ -148,8 +149,10 @@ For more information about how to use MultiQC reports, see http://multiqc.info
 |SamplesHom|Number of samples called homozygous-variant|
 |SamplesNC|Number of samples not covered / not called|
 |SampleCalls|The calls for each sample in the mpileup, space-delimited|
-
+<div class="tables-end"></div>
 ## Annex II
+
+<div class="tables-start"></div>
 |Column|Meaning|
 | --- | --- |
 |Chromosome|chromosome number|
@@ -200,9 +203,11 @@ For more information about how to use MultiQC reports, see http://multiqc.info
 |vistaEnhancer[enhancerName:positive/negative]|Known enhancers in the VISTA enhancer browser|
 |PubMedIDIdeogram|PubMed ID of articles in which the term and the cytogeneic position of the variant are co-mentioned|
 |PubMedIDGene|PubMed ID of articles in which the term and the gene containing the variant are co-mentioned|
-
+<div class="tables-end"></div>
 ## Annex III
 
+
+<div class="tables-start"></div>
 |BAIT_SET|The name of the bait set used in the hybrid selection.|
 | --- | --- |
 |GENOME_SIZE|The number of bases in the reference genome used for alignment.|
@@ -259,6 +264,7 @@ For more information about how to use MultiQC reports, see http://multiqc.info
 |HET_SNP_SENSITIVITY|The theoretical HET SNP sensitivity.|
 |HET_SNP_Q|The Phred Scaled Q Score of the theoretical HET SNP sensitivity.|
 
+<div class="tables-end"></div>
 ## Bibliography
 
 1. *Li, M.-X., Gui, H.-S., Kwan, J. S. H., Bao, S.-Y., & Sham, P. C. (2012). A comprehensive framework for prioritizing variants in exome sequencing studies of Mendelian diseases. Nucleic acids research, 40(7), e53. doi:10.1093/nar/gkr1257*
