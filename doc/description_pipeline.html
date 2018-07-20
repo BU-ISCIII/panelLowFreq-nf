@@ -173,7 +173,7 @@ body {
   right: 20px;
   width: 300px;
   padding-top: 20px;
-  overflow: scroll;
+  overflow: none;
   height: calc(100% - 3em - 20px);
 }
 #toc_header {
@@ -221,46 +221,49 @@ img { max-width: 800px; }
 <li>
 <a href="#toc_6">BWA</a>
 </li>
+<li>
+<a href="#toc_7">Picard</a>
+</li>
+<li>
+<a href="#toc_8">Bedtools</a>
+</li>
 </ul>
 </li>
 <li>
-<a href="#toc_7">Bedtools</a>
-</li>
-<li>
-<a href="#toc_8">Variant Calling</a>
+<a href="#toc_9">Variant Calling</a>
 <ul>
 <li>
-<a href="#toc_9">Samtools</a>
+<a href="#toc_10">Samtools</a>
 </li>
 <li>
-<a href="#toc_10">VarScan</a>
+<a href="#toc_11">VarScan</a>
 </li>
 </ul>
 </li>
 <li>
-<a href="#toc_11">Post-Analysis: annotation and filtering</a>
+<a href="#toc_12">Post-Analysis: annotation and filtering</a>
 <ul>
 <li>
-<a href="#toc_12">KGGSeq</a>
+<a href="#toc_13">KGGSeq</a>
 </li>
 </ul>
 </li>
 </ul>
 </li>
 <li>
-<a href="#toc_13">MultiQC</a>
+<a href="#toc_14">MultiQC</a>
 <ul>
 <li>
-<a href="#toc_14">Annex I</a>
+<a href="#toc_15">Annex I</a>
 </li>
 <li>
-<a href="#toc_15">Annex II</a>
+<a href="#toc_16">Annex II</a>
 </li>
 <li>
-<a href="#toc_16">Annex III</a>
+<a href="#toc_17">Annex III</a>
 </li>
 <li>
-<a href="#toc_17">Bibliography</a>
+<a href="#toc_18">Bibliography</a>
 </li>
 </ul>
 </li>
@@ -279,14 +282,14 @@ img { max-width: 800px; }
 <p>The pipeline is built using <a href="https://www.nextflow.io/">Nextflow</a> and processes data using the following steps:</p>
 
 <ul>
-<li><a href="#fastqc">FastQC</a> - read quality control</li>
-<li><a href="#trimming">Trimmomatic</a> - adapter and low quality trimming</li>
-<li><a href="#bwa">BWA</a> - mapping against reference genome</li>
-<li><a href="#picard">Picard</a> - enrichment and alignment metrics</li>
-<li><a href="#samtools">SAMtools</a> - alignment result processing and variant calling.</li>
-<li><a href="#varscan">VarScan</a> - variant calling.</li>
-<li><a href="#kggseq">KGGSeq</a> - variant annotation.</li>
-<li><a href="#multiqc">MultiQC</a> - quality statistics summary</li>
+<li><a href="#fastqc">FastQC</a> v0.11.3 - read quality control</li>
+<li><a href="#trimming">Trimmomatic</a> v.0.33 - adapter and low quality trimming</li>
+<li><a href="#bwa">BWA</a> v.0.7.12 - mapping against reference genome</li>
+<li><a href="#samtools">SAMtools</a> v1.2 - alignment result processing and variant calling.</li>
+<li><a href="#picard">Picard</a> v.1.140 - enrichment and alignment metrics</li>
+<li><a href="#varscan">VarScan</a> v2.3.9 - variant calling.</li>
+<li><a href="#kggseq">KGGSeq</a> v.0.8 - variant annotation.</li>
+<li><a href="#multiqc">MultiQC</a> v1.5 - quality statistics summary</li>
 </ul>
 
 <blockquote>
@@ -353,17 +356,22 @@ Parameters included for trimming are:</p>
 <ul>
 <li>There is one folder per sample.</li>
 <li>This files can be used in <a href="https://software.broadinstitute.org/software/igv/">IGV</a> for alignment visualization.</li>
-<li><p>Files:</p>
+<li>Files:
 
 <ul>
 <li><code>{sample_id}/{sample_id}_sorted.bam</code> : sorted aligned bam file.</li>
-<li><code>{sample_id}/{sample_id}_sorted.bam.bai</code>: index file for soreted aligned bam.
-## Picard
-Metrics for the analysis of target-capture sequencing experiments are calculated with <a href="https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics">Picard CollectHsMetrics</a>. The metrics in this class fall broadly into three categories:</li>
+<li><code>{sample_id}/{sample_id}_sorted.bam.bai</code>: index file for soreted aligned bam.</li>
 </ul></li>
-<li><p>Basic sequencing metrics that are either generated as a baseline against which to evaluate other metrics or because they are used in the calculation of other metrics. This includes things like the genome size, the number of reads, the number of aligned reads etc.</p></li>
-<li><p>Metrics that are intended for evaluating the performance of the wet-lab assay that generated the data. This group includes metrics like the number of bases mapping on/off/near baits, %selected, fold 80 base penalty, hs library size and the hs penalty metrics. These metrics are calculated prior to some of the filters are applied (e.g. low mapping quality reads, low base quality bases and bases overlapping in the middle of paired-end reads are all counted).</p></li>
-<li><p>Metrics for assessing target coverage as a proxy for how well the data is likely to perform in downstream applications like variant calling. This group includes metrics like mean target coverage, the percentage of bases reaching various coverage levels, and the percentage of bases excluded by various filters. These metrics are computed using the strictest subset of the data, after all filters have been applied.</p></li>
+</ul>
+
+<h3 id="toc_7">Picard</h3>
+
+<p>Metrics for the analysis of target-capture sequencing experiments are calculated with <a href="https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics">Picard CollectHsMetrics</a>. The metrics in this class fall broadly into three categories:</p>
+
+<ul>
+<li>Basic sequencing metrics that are either generated as a baseline against which to evaluate other metrics or because they are used in the calculation of other metrics. This includes things like the genome size, the number of reads, the number of aligned reads etc.</li>
+<li>Metrics that are intended for evaluating the performance of the wet-lab assay that generated the data. This group includes metrics like the number of bases mapping on/off/near baits, %selected, fold 80 base penalty, hs library size and the hs penalty metrics. These metrics are calculated prior to some of the filters are applied (e.g. low mapping quality reads, low base quality bases and bases overlapping in the middle of paired-end reads are all counted).</li>
+<li>Metrics for assessing target coverage as a proxy for how well the data is likely to perform in downstream applications like variant calling. This group includes metrics like mean target coverage, the percentage of bases reaching various coverage levels, and the percentage of bases excluded by various filters. These metrics are computed using the strictest subset of the data, after all filters have been applied.</li>
 </ul>
 
 <p><strong>Results directory:</strong> ANALYSIS/{ANALYSIS_ID}/99-stats/bamstats</p>
@@ -378,7 +386,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 </ul></li>
 </ul>
 
-<h2 id="toc_7">Bedtools</h2>
+<h3 id="toc_8">Bedtools</h3>
 
 <p><a href="http://bedtools.readthedocs.io/en/latest/">Bedtools</a> is used for calculating exons with less than 20x of depth of coverage, with bedtools coverage utility.
 <strong>Results directory:</strong> ANALYSIS/{ANALYSIS_ID/99-stats/bedtools}</p>
@@ -393,9 +401,9 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 </ul></li>
 </ul>
 
-<h2 id="toc_8">Variant Calling</h2>
+<h2 id="toc_9">Variant Calling</h2>
 
-<h3 id="toc_9">Samtools</h3>
+<h3 id="toc_10">Samtools</h3>
 
 <p>Samtools mpileup command is used for generate a pileup for one the BAM files. In the pileup format each line represents a genomic position, consisting of chromosome name, 1-based coordinate, reference base, the number of reads covering the site, read bases, base qualities and alignment mapping qualities. Information on match, mismatch, indel, strand, mapping quality and start and end of a read are all encoded at the read base column. This information is used by <a href="#varscan">VarScan</a> for doing the proper variant calling step.</p>
 
@@ -412,7 +420,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 
 <p><strong>NOTE:</strong> This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.</p>
 
-<h3 id="toc_10">VarScan</h3>
+<h3 id="toc_11">VarScan</h3>
 
 <p><a href="http://varscan.sourceforge.net/using-varscan.html">VarScan</a> is used for variant calling using the command mpileup2cns with the following parameters:</p>
 
@@ -433,9 +441,9 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 <li>Description of VarScan columns in its output can be found in <a href="#annex-i">AnnexI</a></li>
 </ul>
 
-<h2 id="toc_11">Post-Analysis: annotation and filtering</h2>
+<h2 id="toc_12">Post-Analysis: annotation and filtering</h2>
 
-<h3 id="toc_12">KGGSeq</h3>
+<h3 id="toc_13">KGGSeq</h3>
 
 <p><a href="http://grass.cgs.hku.hk/limx/kggseq/">KGGSeq</a> is used for variant annotation, a tool design for variant priorization in the study of mendelian diseases.</p>
 
@@ -463,7 +471,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 <li><p>Description of kggseq columns in its output can be found in <a href="#annex-ii">Annex II</a></p></li>
 </ul>
 
-<h1 id="toc_13">MultiQC</h1>
+<h1 id="toc_14">MultiQC</h1>
 
 <p><a href="http://multiqc.info">MultiQC</a> is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.</p>
 
@@ -476,7 +484,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 
 <p>For more information about how to use MultiQC reports, see <a href="http://multiqc.info">http://multiqc.info</a></p>
 
-<h2 id="toc_14">Annex I</h2>
+<h2 id="toc_15">Annex I</h2>
 
 <div class="tables-start"></div>
 
@@ -574,7 +582,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 
 <div class="tables-end"></div>
 
-<h2 id="toc_15">Annex II</h2>
+<h2 id="toc_16">Annex II</h2>
 
 <div class="tables-start"></div>
 
@@ -780,7 +788,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 
 <div class="tables-end"></div>
 
-<h2 id="toc_16">Annex III</h2>
+<h2 id="toc_17">Annex III</h2>
 
 <div class="tables-start"></div>
 
@@ -1006,7 +1014,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 
 <div class="tables-end"></div>
 
-<h2 id="toc_17">Bibliography</h2>
+<h2 id="toc_18">Bibliography</h2>
 
 <ol>
 <li><em>Li, M.-X., Gui, H.-S., Kwan, J. S. H., Bao, S.-Y., &amp; Sham, P. C. (2012). A comprehensive framework for prioritizing variants in exome sequencing studies of Mendelian diseases. Nucleic acids research, 40(7), e53. doi:10.1093/nar/gkr1257</em></li>

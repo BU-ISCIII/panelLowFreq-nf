@@ -29,7 +29,7 @@ body {
   right: 20px;
   width: 300px;
   padding-top: 20px;
-  overflow: scroll;
+  overflow: none;
   height: calc(100% - 3em - 20px);
 }
 #toc_header {

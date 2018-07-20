@@ -7,14 +7,15 @@ This document describes the output produced by the pipeline and location of outp
 ## Pipeline overview:
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
-* [FastQC](#fastqc) - read quality control
-* [Trimmomatic](#trimming) - adapter and low quality trimming
-* [BWA](#bwa) - mapping against reference genome
-* [Picard](#picard) - enrichment and alignment metrics
-* [SAMtools](#samtools) - alignment result processing and variant calling.
-* [VarScan](#varscan) - variant calling.
-* [KGGSeq](#kggseq) - variant annotation.
-* [MultiQC](#multiqc) - quality statistics summary
+
+* [FastQC](#fastqc) v0.11.3 - read quality control
+* [Trimmomatic](#trimming) v.0.33 - adapter and low quality trimming
+* [BWA](#bwa) v.0.7.12 - mapping against reference genome
+* [SAMtools](#samtools) v1.2 - alignment result processing and variant calling.
+* [Picard](#picard) v.1.140 - enrichment and alignment metrics
+* [VarScan](#varscan) v2.3.9 - variant calling.
+* [KGGSeq](#kggseq) v.0.8 - variant annotation.
+* [MultiQC](#multiqc) v1.5 - quality statistics summary
 
 > Each analysis folder contains a log folder with the log files for each process and each sample.
 
