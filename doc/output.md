@@ -50,6 +50,7 @@ MultiQC reports the percentage of bases removed by trimming in bar plot showing 
 **NOTE:** This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.
 
 ## Mapping
+
 ### BWA
 [BWA](http://bio-bwa.sourceforge.net/), or Burrows-Wheeler Aligner, is designed for mapping low-divergent sequence reads against reference genomes. The result alignment files are further processed with [SAMtools](http://samtools.sourceforge.net/), sam format is converted to bam, sorted and an index *.bai* is generated.
 
@@ -59,7 +60,8 @@ MultiQC reports the percentage of bases removed by trimming in bar plot showing 
 - Files:
    - `{sample_id}/{sample_id}_sorted.bam` : sorted aligned bam file.
    - `{sample_id}/{sample_id}_sorted.bam.bai`: index file for soreted aligned bam.
-## Picard
+
+### Picard
 Metrics for the analysis of target-capture sequencing experiments are calculated with [Picard CollectHsMetrics](https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics). The metrics in this class fall broadly into three categories:
 
 - Basic sequencing metrics that are either generated as a baseline against which to evaluate other metrics or because they are used in the calculation of other metrics. This includes things like the genome size, the number of reads, the number of aligned reads etc.
@@ -72,7 +74,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
    - `{sample_id}_hsMetrics.out`: full picard hsmetrics output per sample.
    - Description of Picard hsMetrics columns in its output can be found in [AnnexIII](#annex-iii)
 
-## Bedtools
+### Bedtools
 [Bedtools](http://bedtools.readthedocs.io/en/latest/) is used for calculating exons with less than 20x of depth of coverage, with bedtools coverage utility.
 **Results directory:** ANALYSIS/{ANALYSIS_ID/99-stats/bedtools}
 - Files:
