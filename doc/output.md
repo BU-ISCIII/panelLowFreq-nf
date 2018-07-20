@@ -72,6 +72,14 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
    - `{sample_id}_hsMetrics.out`: full picard hsmetrics output per sample.
    - Description of Picard hsMetrics columns in its output can be found in [AnnexIII](#annex-iii)
 
+## Bedtools
+[Bedtools](http://bedtools.readthedocs.io/en/latest/) is used for calculating exons with less than 20x of depth of coverage, with bedtools coverage utility.
+**Results directory:** ANALYSIS/{ANALYSIS_ID/99-stats/bedtools}
+- Files:
+   - `{sample_id}.cov.csv`: coverage information for each feature in enrichment (bed) file.
+   - `{sample_id}.cov.csv_exons_below20.txt`: exons with mean depth of coverage below 20x.
+   - `exons_not_covered_stats.csv`: summary with information of percentage of exons above and below 20x depth of coverage.
+
 ## Variant Calling
 ### Samtools
 Samtools mpileup command is used for generate a pileup for one the BAM files. In the pileup format each line represents a genomic position, consisting of chromosome name, 1-based coordinate, reference base, the number of reads covering the site, read bases, base qualities and alignment mapping qualities. Information on match, mismatch, indel, strand, mapping quality and start and end of a read are all encoded at the read base column. This information is used by [VarScan](#varscan) for doing the proper variant calling step.
@@ -237,8 +245,8 @@ For more information about how to use MultiQC reports, see http://multiqc.info
 |PCT_SELECTED_BASES|The fraction of PF_BASES_ALIGNED located on or near a baited region (ON_BAIT_BASES + NEAR_BAIT_BASES)/PF_BASES_ALIGNED.|
 |PCT_OFF_BAIT|The fraction of PF_BASES_ALIGNED that are mapped away from any baited region, OFF_BAIT_BASES/PF_BASES_ALIGNED.|
 |ON_BAIT_VS_SELECTED|The fraction of bases on or near baits that are covered by baits, ON_BAIT_BASES/(ON_BAIT_BASES + NEAR_BAIT_BASES).|
-|MEAN_BAIT_COVERAGE|The mean coverage of all baits in the experiment.|
-|MEAN_TARGET_COVERAGE|The mean coverage of a target region.|
+|MEAN_BAIT_COVERAGE|The mean coverage of all baits in the experiment. Taking into account all bases without filtering|
+|MEAN_TARGET_COVERAGE|The mean coverage of a target region. This only takes into account reads passing all filters, eg. MAPQ, and targets with at least 2x in one base.|
 |MEDIAN_TARGET_COVERAGE|The median coverage of a target region.|
 |MAX_TARGET_COVERAGE|The maximum coverage of reads that mapped to target regions of an experiment.|
 |PCT_USABLE_BASES_ON_BAIT|The number of aligned, de-duped, on-bait bases out of the PF bases available.|
