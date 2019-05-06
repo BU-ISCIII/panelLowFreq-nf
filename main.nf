@@ -58,7 +58,6 @@ def helpMessage() {
       --trimmomatic_window_value    Window average quality requiered. Default 20
       --trimmomatic_mininum_length  Minimum length of reads
     Mapping options
-	  --keepduplicates				Keep duplicate reads. Picard MarkDuplicates step skipped.
 	  --saveAlignedIntermediates	Save intermediate bam files.
     PlasmidID options
       --plasmidid_database          Plasmids database
