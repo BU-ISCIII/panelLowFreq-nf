@@ -1,0 +1,13 @@
+## DATA TEST
+test/
+
+## Container images
+*.img
+*.simg
+log
+## Nextflow results and logs
+.nextflow*
+.nextflow/
+results/
+results2/
+work/
