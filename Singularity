@@ -22,10 +22,6 @@ From: buisciii/centos7_base_image:latest
     scif install /opt/scif_app_recipes/trimmomatic_v0.38_centos7.scif && \
     echo "Installing samtools app" && \
     scif install /opt/scif_app_recipes/samtools_v1.9_centos7.scif && \
-    echo "Installing htslib app" && \
-    scif install /opt/scif_app_recipes/htslib_v1.9_centos7.scif && \
-    echo "Installing picard app" && \
-    scif install /opt/scif_app_recipes/picard_v1.140_centos7.scif && \
     echo "Installing bedtools app" && \
     scif install /opt/scif_app_recipes/bedtools_v2.27_centos7.scif && \
     echo "Installing varscan app" && \
@@ -44,9 +40,6 @@ From: buisciii/centos7_base_image:latest
 	if [[ ":$PATH:" == *":/scif/apps/snppipeline:"* ]];then
 
 		export CLASSPATH=/scif/apps/varscan/varscan-2.3.9/varscan-2.3.9.jar:$CLASSPATH >> $SINGULARITY_ENVIRONMENT
-		export CLASSPATH=/scif/apps/picard/picard.jar:$CLASSPATH >> $SINGULARITY_ENVIRONMENT
-		export CLASSPATH=/scif/apps/gatk/gatk-3.8/GenomeAnalysisTK.jar:$CLASSPATH >> $SINGULARITY_ENVIRONMENT
-		export CLASSPATH=/scif/apps/kggseq/kggseq-1.1/kggseq.jar:$CLASSPATH >> $SINGULARITY_ENVIRONMENT
 
 	fi
 
