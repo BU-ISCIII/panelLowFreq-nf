@@ -21,19 +21,19 @@ RUN echo "Installing FastQC app" && \
     scif install /opt/htslib_v1.9_centos7.scif && \
     echo "Installing picard app" && \
     scif install /opt/picard_v1.140_centos7.scif && \
-    echo "Installing prokka app" && \
-    scif install /opt/prokka_v1.13_centos7.scif && \
-    echo "Installing quast app" && \
-    scif install /opt/quast_v5.0.0_centos7.scif && \
+    echo "Installing bedtools app" && \
+    scif install /opt/bedtools_v2.27_centos7.scif && \
+    echo "Installing varscan app" && \
+    scif install /opt/varscan_v2.3.9_centos7.scif && \
     echo "Installing multiqc app" && \
     scif install /opt/multiqc_v1.4_centos7.scif && \
-    echo "Installing Unicycler app" && \
-    scif install /opt/unicycler_v0.4.7_centos7.scif
+    echo "Installing kggseq app" && \
+    scif install /opt/kggseq_v1.1_centos7.scif
 
 
 # Include ENV variables
 ENV LC_ALL=en_US.UTF-8
-ENV PATH=$PATH:/scif/apps/aragorn/bin    
+ENV PATH=$PATH:/scif/apps/aragorn/bin
 ENV PATH=$PATH:/scif/apps/barrnap/bin
 ENV PATH=$PATH:/scif/apps/bowtie2/bin
 ENV PATH=$PATH:/scif/apps/fastqc/bin
@@ -55,6 +55,9 @@ ENV PATH=$PATH:/scif/apps/sratoolkit/bin
 ENV PATH=$PATH:/scif/apps/tbl2asn/bin
 ENV PATH=$PATH:/scif/apps/trimmomatic/bin
 ENV PATH=$PATH:/scif/apps/unicycler/bin
+ENV PATH=$PATH:/scif/apps/kggseq/bin
+ENV PATH=$PATH:/scif/apps/bedtools/bin
+ENV PATH=$PATH:/scif/apps/varscan/bin
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/aragorn/lib/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/barrnap/lib/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/bowtie2/lib/lib
@@ -77,6 +80,9 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/sratoolkit/lib/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/tbl2asn/lib/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/trimmomatic/lib/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/unicycler/lib/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/kggseq/lib/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/bedtools/lib/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/varscan/lib/lib
 #ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH/usr/local/lib
 
 #ENTRYPOINT ["/opt/docker-entrypoint.sh"]
