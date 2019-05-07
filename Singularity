@@ -43,5 +43,7 @@ From: buisciii/centos7_base_image:latest
 
 	fi
 
+	# Install core R dependencies
+	echo "r <- getOption('repos'); r['CRAN'] <- 'https://ftp.acc.umu.se/mirror/CRAN/'; options(repos = r);" > ~/.Rprofile
 %runscript
     exec scif "$@"
