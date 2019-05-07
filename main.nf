@@ -151,3 +151,72 @@ if ( ! params.gtf ){
 if ( ! params.resourceDatasets ){
     exit 1, "Resource dataset not provided for annotation step, please declare it with --resourceDatasets /path/to/resource_datasets_file"
 }
+
+
+/*
+ * Create channel for input files
+ */
+
+// Create channel for input reads.
+Channel
+    .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
+    .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nIf this is single-end data, please specify --singleEnd on the command line." }
+    .into { raw_reads_fastqc; raw_reads_trimming }
+
+// Create channel for bwa_index if supplied
+if( params.bwa_index ){
+    bwa_index = Channel
+        .fromPath(params.bwa_index)
+        .ifEmpty { exit 1, "BWA index not found: ${params.bwa_index}" }
+}
+
+
+// Header log info
+log.info "========================================="
+log.info " BU-ISCIII/panelLowFreq-nf : Low frequency panel v${version}"
+log.info "========================================="
+def summary = [:]
+summary['Reads']               = params.reads
+summary['Data Type']           = params.singleEnd ? 'Single-End' : 'Paired-End'
+if(params.bwa_index)  summary['BWA Index'] = params.bwa_index
+else if(params.fasta) summary['Fasta Ref'] = params.fasta
+if(params.gtf)  summary['GTF File'] = params.gtf
+summary['Step']                = params.step
+summary['Container']           = workflow.container
+if(workflow.revision) summary['Pipeline Release'] = workflow.revision
+summary['Current home']        = "$HOME"
+summary['Current user']        = "$USER"
+summary['Current path']        = "$PWD"
+summary['Working dir']         = workflow.workDir
+summary['Output dir']          = params.outdir
+summary['Script dir']          = workflow.projectDir
+summary['Save Reference']      = params.saveReference
+summary['Save Trimmed']        = params.saveTrimmed
+summary['Save Intermeds']      = params.saveAlignedIntermediates
+if( params.notrim ){
+    summary['Trimming Step'] = 'Skipped'
+} else {
+    summary['Trimmomatic adapters file'] = params.trimmomatic_adapters_file
+    summary['Trimmomatic adapters parameters'] = params.trimmomatic_adapters_parameters
+    summary["Trimmomatic window length"] = params.trimmomatic_window_length
+    summary["Trimmomatic window value"] = params.trimmomatic_window_value
+    summary["Trimmomatic minimum length"] = params.trimmomatic_mininum_length
+}
+summary['Config Profile'] = workflow.profile
+log.info summary.collect { k,v -> "${k.padRight(21)}: $v" }.join("\n")
+log.info "===================================="
+
+// Check that Nextflow version is up to date enough
+// try / throw / catch works for NF versions < 0.25 when this was implemented
+nf_required_version = '0.25.0'
+try {
+    if( ! nextflow.version.matches(">= $nf_required_version") ){
+        throw GroovyException('Nextflow version too old')
+    }
+} catch (all) {
+    log.error "====================================================\n" +
+              "  Nextflow version $nf_required_version required! You are running v$workflow.nextflow.version.\n" +
+              "  Pipeline execution will continue, but things may break.\n" +
+              "  Please run `nextflow self-update` to update Nextflow.\n" +
+              "============================================================"
+}
