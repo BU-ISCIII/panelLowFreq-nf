@@ -45,8 +45,9 @@ def helpMessage() {
       --bwa_index                   Path to BWA index
       --gtf                         Path to GTF reference file. (Mandatory if step = assembly)
       --saveReference               Save reference file and indexes.
+      --samplesID                   Path to samples ID txt file
     Steps available:
-      --step [str]                  Select which step to perform (preprocessing|mapping|variantCalling|annotFilter)
+      --step [str]                  Select which step to perform (preprocessing|mapping|variantCalling|annotation)
     Options:
       --singleEnd                   Specifies that the input is single end reads
     Trimming options
@@ -90,6 +91,13 @@ if( params.fasta ){
     if( !fasta_file.exists() ) exit 1, "Fasta file not found: ${params.fasta}."
 }
 
+// Samples ID file
+params.samplesID = false
+if( params.samplesID ){
+    samplesID_file = file(params.samplesID)
+    if( !samplesID_file.exists() ) exit 1, "Samples ID file not found: ${params.samplesID}."
+}
+
 // bwa index
 params.bwa_index = false
 
@@ -108,8 +116,8 @@ if( params.gtf ){
 
 // Steps
 params.step = "preprocessing"
-if ( ! (params.step =~ /(preprocessing|mapping|assembly|plasmidID|outbreakSNP|outbreakMLST|strainCharacterization|mapAnnotation)/) ) {
-	exit 1, 'Please provide a valid --step option [preprocessing,mapping,assembly,plasmidID,outbreakSNP,outbreakMLST,strainCharacterization,mapAnnotation]'
+if ( ! (params.step =~ /(preprocessing|mapping|variantCalling|annotation)/) ) {
+	exit 1, 'Please provide a valid --step option [preprocessing|mapping|variantCalling|annotation]'
 }
 
 // SingleEnd option
@@ -141,6 +149,8 @@ params.saveAlignedIntermediates = false
 // Validate  mandatory inputs
 
 if (! params.reads ) exit 1, "Missing reads: $params.reads. Specify path with --reads"
+
+if (! params.samplesID ) exit 1, "Missing samples IDs: $params.samplesID. Specify path with --samplesID"
 
 if( ! params.fasta ) exit 1, "Missing Reference human genome: '$params.fasta'. Specify path with --fasta"
 
@@ -219,4 +229,86 @@ try {
               "  Pipeline execution will continue, but things may break.\n" +
               "  Please run `nextflow self-update` to update Nextflow.\n" +
               "============================================================"
+}
+
+/*
+ * Build BWA index
+ */
+if (params.step =~ /(mapping|variantCalling|annotation)/){
+	if(!params.bwa_index && fasta_file){
+		process makeBWAindex {
+			tag "${fasta.baseName}"
+			publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
+					saveAs: { params.saveReference ? it : null }, mode: 'copy'
+
+			input:
+			file fasta from fasta_file
+
+			output:
+			file "${fasta}*" into bwa_index
+
+			script:
+			"""
+			mkdir BWAIndex
+			bwa index -a bwtsw $fasta
+			"""
+		}
+	}
+}
+
+
+/*
+ * STEP 1.1 - FastQC
+ */
+
+
+if (params.step =~ /(preprocessing|mapping|variantCalling|annotation)/ ){
+	process fastqc {
+		tag "$prefix"
+		publishDir "${params.outdir}/01-fastqc", mode: 'copy',
+			saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+
+		input:
+		set val(name), file(reads) from raw_reads_fastqc
+
+		output:
+		file '*_fastqc.{zip,html}' into fastqc_results
+		file '.command.out' into fastqc_stdout
+
+		script:
+
+		prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
+		"""
+		fastqc --nogroup -t 8 -k 8 $reads
+		"""
+	}
+
+	process trimming {
+		tag "$prefix"
+		publishDir "${params.outdir}/trimming", mode: 'copy',
+			saveAs: {filename ->
+				if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
+				else if (filename.indexOf(".log") > 0) "logs/$filename"
+    else if (filename.indexOf(".fastq.gz") > 0) "trimmed/$filename"
+				else params.saveTrimmed ? filename : null
+		}
+
+		input:
+		set val(name), file(reads) from raw_reads_trimming
+
+		output:
+		file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa,trimmed_paired_reads_unicycler,trimmed_paired_reads_wgsoutbreaker,trimmed_paired_reads_plasmidid,trimmed_paired_reads_mlst,trimmed_paired_reads_res,trimmed_paired_reads_sero,trimmed_paired_reads_vir
+		file '*_unpaired_*.fastq.gz' into trimmed_unpaired_reads
+		file '*_fastqc.{zip,html}' into trimmomatic_fastqc_reports
+		file '*.log' into trimmomatic_results
+
+		script:
+		prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
+		"""
+		trimmomatic PE -phred33 $reads -threads 1 $prefix"_paired_R1.fastq" $prefix"_unpaired_R1.fastq" $prefix"_paired_R2.fastq" $prefix"_unpaired_R2.fastq" ILLUMINACLIP:${params.trimmomatic_adapters_file}:${params.trimmomatic_adapters_parameters} SLIDINGWINDOW:${params.trimmomatic_window_length}:${params.trimmomatic_window_value} MINLEN:${params.trimmomatic_mininum_length} 2> ${name}.log
+		gzip *.fastq
+		fastqc -q *_paired_*.fastq.gz
+		"""
+	}
+
 }
