@@ -41,10 +41,6 @@ def helpMessage() {
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes).
       --fasta                       Path to Fasta reference
-    References
-      --bwa_index                   Path to BWA index
-      --gtf							Path to GTF reference file. (Mandatory if step = assembly)
-      --saveReference				Save reference file and indexes.
 	Steps available:
 	  --step [str]					Select which step to perform (preprocessing|mapping|variantCalling|annotFilter)
     Options:
@@ -57,21 +53,15 @@ def helpMessage() {
       --trimmomatic_window_length   Window size. Default 4
       --trimmomatic_window_value    Window average quality requiered. Default 20
       --trimmomatic_mininum_length  Minimum length of reads
+    References
+      --bwa_index                   Path to BWA index
+      --gtf							Path to GTF reference file. (Mandatory if step = assembly)
+      --saveReference				Save reference file and indexes.
     Mapping options
 	  --saveAlignedIntermediates	Save intermediate bam files.
-    PlasmidID options
-      --plasmidid_database          Plasmids database
-      --plasmidid_config            PlasmidID annotation config file
-    Strain Characterization options
-      --srst2_resistance            Fasta file/s for gene resistance databases
-      --srst2_virulence             Fasta file/s for gene virulence databases
-      --srst2_db_mlst               Fasta file of MLST alleles
-      --srst2_def_mlst              ST definitions for MLST scheme
-      --srst2_db_sero               Fasta file of serogroup
-      --srst2_def_sero              ST definitions for serogroup scheme
-    OutbreakSNP options
-      --outbreaker_config			Config needed by wgs-outbreaker.
-	OutbreakMLST options
+    Annotation options
+	  --resourceDatasets			Path to the resource datasets.
+
     Other options:
       --outdir                      The output directory where the results will be saved
     """.stripIndent()
