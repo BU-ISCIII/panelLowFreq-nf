@@ -14,6 +14,7 @@ Pipeline overview:
  - 1. : Preprocessing
  	- 1.1: FastQC for raw sequencing reads quality control
  	- 1.2: Trimmomatic
+	- 1.3: Quality control of the trimmed reads with fastQC
  - 2. : Mapping
  	- 2.1 : BWA alignment against reference genome
  	- 2.2 : Picard metrics for the analysis of target-capture sequencing experiments
@@ -285,7 +286,7 @@ if (params.step =~ /(preprocessing|mapping|variantCalling|annotation)/ ){
 
 	process trimming {
 		tag "$prefix"
-		publishDir "${params.outdir}/trimming", mode: 'copy',
+		publishDir "${params.outdir}/02-preprocessing_NC", mode: 'copy',
 			saveAs: {filename ->
 				if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
 				else if (filename.indexOf(".log") > 0) "logs/$filename"
