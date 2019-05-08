@@ -284,6 +284,10 @@ if (params.step =~ /(preprocessing|mapping|variantCalling|annotation)/ ){
 		"""
 	}
 
+    /*
+     * STEP 1.2 - Trimming
+     */
+
 	process trimming {
 		tag "$prefix"
 		publishDir "${params.outdir}/02-preprocessing_NC", mode: 'copy',
@@ -298,7 +302,7 @@ if (params.step =~ /(preprocessing|mapping|variantCalling|annotation)/ ){
 		set val(name), file(reads) from raw_reads_trimming
 
 		output:
-		file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa,trimmed_paired_reads_unicycler,trimmed_paired_reads_wgsoutbreaker,trimmed_paired_reads_plasmidid,trimmed_paired_reads_mlst,trimmed_paired_reads_res,trimmed_paired_reads_sero,trimmed_paired_reads_vir
+		file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa,trimmed_paired_reads_qc
 		file '*_unpaired_*.fastq.gz' into trimmed_unpaired_reads
 		file '*_fastqc.{zip,html}' into trimmomatic_fastqc_reports
 		file '*.log' into trimmomatic_results
@@ -306,10 +310,35 @@ if (params.step =~ /(preprocessing|mapping|variantCalling|annotation)/ ){
 		script:
 		prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
 		"""
-		trimmomatic PE -phred33 $reads -threads 1 $prefix"_paired_R1.fastq" $prefix"_unpaired_R1.fastq" $prefix"_paired_R2.fastq" $prefix"_unpaired_R2.fastq" ILLUMINACLIP:${params.trimmomatic_adapters_file}:${params.trimmomatic_adapters_parameters} SLIDINGWINDOW:${params.trimmomatic_window_length}:${params.trimmomatic_window_value} MINLEN:${params.trimmomatic_mininum_length} 2> ${name}.log
+		trimmomatic PE -threads 10 -phred33 $reads $prefix"_R1_filtered.fastq" $prefix"_R1_unpaired.fastq" $prefix"_R2_filtered.fastq" $prefix"_R2_unpaired.fastq" ILLUMINACLIP:${params.trimmomatic_adapters_file}:${params.trimmomatic_adapters_parameters} SLIDINGWINDOW:${params.trimmomatic_window_length}:${params.trimmomatic_window_value} MINLEN:${params.trimmomatic_mininum_length} 2> ${name}.log
 		gzip *.fastq
-		fastqc -q *_paired_*.fastq.gz
 		"""
 	}
 
+
+    /*
+     * STEP 1.3 - FastQC on trimmed reads
+     */
+
+	process fastqc_trimmed {
+		tag "$prefix"
+		publishDir "${params.outdir}/03-preprocQC", mode: 'copy',
+			saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+
+		input:
+		set val(name), file(reads) from trimmed_paired_reads_qc
+
+		output:
+		file '*_fastqc.{zip,html}' into fastqc_results
+		file '.command.out' into fastqc_stdout
+
+		script:
+		prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
+		"""
+		fastqc --nogroup -t 8 -k 8 $reads
+		"""
+	}
+
+
 }
+
