@@ -56,8 +56,14 @@ def helpMessage() {
       --trimmomatic_mininum_length  Minimum length of reads
     Mapping options
       --saveAlignedIntermediates    Save intermediate bam files.
+	Veriant calling
+	  --maxDepth                    Maximum number of reads per input file to read at a position. Default 20000
+	  --minBaseQ                    Minimum base quality for a base to be considered. Default 0.
+	  --minVarFreq                  Minimum variant allele frequency threshold. Default 0.05
+	  --pValue                      Default p-value threshold for calling variants. Default 0.99
     Annotation options
       --resourceDatasets            Path to resource datasets.
+	  --saveDuplicates              Save duplicated sequences.
     Other options:
       --outdir                      The output directory where the results will be saved
     """.stripIndent()
@@ -111,6 +117,12 @@ params.trimmomatic_window_length = "4"
 params.trimmomatic_window_value = "20"
 params.trimmomatic_mininum_length = "50"
 
+//Default variant calling options
+params.maxDepth = "20000"
+params.minBaseQ = "0"
+params.minVarFreq = "0.05"
+params.pValue = "0.99"
+
 // Annotation options
 params.resourceDatasets = false
 if( params.resourceDatasets ){
@@ -122,6 +134,7 @@ if( params.resourceDatasets ){
 params.saveReference = false
 params.saveTrimmed = false
 params.saveAlignedIntermediates = false
+params.saveDuplicates = false
 
 // Validate  mandatory inputs
 
@@ -172,6 +185,8 @@ summary['Script dir']          = workflow.projectDir
 summary['Save Reference']      = params.saveReference
 summary['Save Trimmed']        = params.saveTrimmed
 summary['Save Intermeds']      = params.saveAlignedIntermediates
+summary['Save Duplicates']     = params.saveDuplicates
+summary['VarScan p-value threshold'] = params.pValue
 if( params.notrim ){
     summary['Trimming Step'] = 'Skipped'
 } else {
@@ -256,7 +271,7 @@ process fastqc {
 
 process trimming {
 	tag "$prefix"
-	publishDir "${params.outdir}/02-preprocessing_NC", mode: 'copy',
+	publishDir "${params.outdir}/02-trimming", mode: 'copy',
 		saveAs: {filename ->
 			if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
 			else if (filename.indexOf(".log") > 0) "logs/$filename"
@@ -268,7 +283,7 @@ process trimming {
 	set val(name), file(reads) from raw_reads_trimming
 
 	output:
-	file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa,trimmed_paired_reads_qc
+	file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa
 	file '*_unpaired_*.fastq.gz' into trimmed_unpaired_reads
 	file '*_fastqc.{zip,html}' into trimmomatic_fastqc_reports
 	file '*.log' into trimmomatic_results
@@ -281,3 +296,29 @@ process trimming {
 	fastqc -q *_paired_*.fastq.gz
 	"""
 }
+
+/*
+ * STEP 2.1 - BWA alignment
+ */
+
+process bwa {
+	tag "$prefix"
+	publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+			saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
+
+	input:
+	file reads from trimmed_paired_reads_bwa
+	file index from bwa_index
+	file fasta from fasta_file
+
+	output:
+	file '*.bam' into bwa_bam
+
+	script:
+	prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+	"""
+	bwa mem $fasta $reads | samtools view -bS -o 
+	$fasta - > ${prefix}.bam
+	"""
+	}
+
