@@ -317,7 +317,7 @@ process bwa {
     script:
     prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     """
-    bwa mem -M $index $reads -> ${prefix}.sam
+    bwa mem -M $index $reads > ${prefix}.sam
 	samtools view -bS ${prefix}.sam -o ${prefix}.bam
     """
 }
@@ -331,7 +331,7 @@ process samtools {
     tag "${bam.baseName}"
     publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
             saveAs: { filename ->
-                    if (filename.indexOf(".stats.txt") > 0) "stats/$filename"
+                    if (filename.indexOf("_stats.txt") > 0) "stats/$filename"
                     else params.saveAlignedIntermediates ? filename : null
             }
 
@@ -341,11 +341,13 @@ process samtools {
     output:
         file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls
         file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_for_mapped
+		file '*_stats.txt' into samtools_stats
 
     script:
     """
     samtools sort $bam -T ${bam.baseName}_sorted -o ${bam.baseName}_sorted.bam
     samtools index ${bam.baseName}_sorted.bam
+	samtools stats ${bam.baseName}_sorted.bam > ${bam.baseName}_stats.txt
     """
 }
 
@@ -357,14 +359,14 @@ process samtools {
 process picard {
     tag "$prefix"
     publishDir "${params.outdir}/04-picard", mode: 'copy'
-
+            
+			
     input:
     file bam from bam_picard
 
     output:
     file '*_dedup_sorted.bam' into bam_dedup_spp, bam_dedup_ngsplot, bam_dedup_deepTools, bam_dedup_macs, bam_dedup_saturation, bam_dedup_epic, bam_dedup_mpileup
     file '*_dedup_sorted.bam.bai' into bai_dedup_deepTools, bai_dedup_spp, bai_dedup_ngsplot, bai_dedup_macs, bai_dedup_saturation, bai_dedup_epic
-    file '*_dedup_sorted.bed' into bed_dedup,bed_epic_dedup
     file '*_picardDupMetrics.txt' into picard_reports
 
     script:
@@ -401,7 +403,7 @@ process mpileup {
     script:
     prefix = dedup_bam[0].toString() - ~/(_dedup)?(\.sorted)?(\.bam)?$/
     """
-    samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dedup_bam -> $prefix".pileup"
+    samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dedup_bam > $prefix".pileup"
     """
 }
 
@@ -421,7 +423,7 @@ process varscan {
 
     script:
     """
-	java -jar -Xmx10g $VARSCAN_HOME/VarScan.v2.3.9.jar mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 -> ${pileup.baseName}.vcf
+	java -jar -Xmx10g $VARSCAN_HOME/VarScan.v2.3.9.jar mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 > ${pileup.baseName}.vcf
     """
 }
 
@@ -451,7 +453,7 @@ process varscan {
 
     script:
     """
-	bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' -> ${vcf.baseName}.table
+	bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
 	java -jar -Xmx10g $KGGSEQ_HOME/kggseq.jar --no-resource-check --no-lib-check --buildver hg38 --vcf-file $vcf --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
 	gunzip *_annot.txt.flt.txt.gz
 	cp header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
