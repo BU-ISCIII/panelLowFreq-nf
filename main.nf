@@ -466,7 +466,6 @@ process varscan {
     publishDir "${params.outdir}/07-Annotation", mode: 'copy',
             saveAs: { filename ->
                     if (filename.indexOf(".table") > 0) "bcftools/$filename"
-                    else if (filename.indexOf("_all_annotated.tab") > 0) "R_merge/$filename"
                     else if (filename.indexOf("_annot.txt*") > 0) "kggseq/$filename"
                     else if (filename.indexOf("_header.table") > 0) "header_table/$filename"
             }
@@ -484,8 +483,42 @@ process varscan {
     script:
     """
     bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
-    kggseq --no-resource-check --no-lib-check --buildver hg38 --vcf-file $vcf --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
+    kggseq --no-resource-check --no-lib-check --buildver hg38 --vcf-file $vcf --resource ${resourceDatasets} --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
     gunzip *_annot.txt.flt.txt.gz
     cp header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
     """
+}
+
+/*
+ * STEP 4.2 - R merge
+ */
+
+process rmerge {
+    tag "$prefix"
+    publishDir "${params.outdir}/07-Annotation/R_merge", mode: 'copy',
+
+    input:
+    set val(name), file(header_table) from header_table
+	file flt from kggseq_flt_file
+
+    output:
+    file '*_all_annotated.tab' into r_merged_tables
+
+    script:
+    prefix = name - ~/(_header)?(\.tabel)?$/
+    """
+	#!/usr/bin/Rscript
+	args = commandArgs(trailingOnly=TRUE)
+	sample <- args[1]
+	
+	variants_phased <- read.table(paste(sample,"_header.table",sep=""),header=T,sep="\t")
+	variants_annotated <- read.csv(paste(sample,"_annot.txt.flt.txt",sep=""),header=T,sep="\t")
+	variants_annotated$Chromosome <- paste("chr",variants_annotated$Chromosome,sep="")
+
+	variants_phased$merged <- paste(variants_phased$CHROM,variants_phased$POS,sep="_")
+	variants_annotated$merged <- paste(variants_annotated$Chromosome,variants_annotated$StartPositionHg38,sep="_")
+
+	table_comp <- merge(variants_phased,variants_annotated,by="merged",all.x=F,all.y=T)
+	write.table(table_comp,file=paste(sample,"_all_annotated.tab",sep=""),sep="\t",row.names=F)
+	"""
 }
