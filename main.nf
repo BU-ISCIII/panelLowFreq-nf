@@ -19,7 +19,7 @@ Pipeline overview:
      - 2.2 : Samtools for generate a pileup for the BAM files
      - 2.3 : Picard metrics for the analysis of target-capture sequencing experiments
  - 3. : Variant Calling
-    - 3.2 : VarScan for variant calling
+    - 3.1 : VarScan for variant calling
  - 4. : KGGSeq 
      - 4.1 : Post-Analysis variant annotation and filtering
  - 5. : MultiQC
@@ -338,7 +338,7 @@ process samtools {
     file bam from bwa_bam
 
     output:
-        file '*_sorted.bam' into bam_for_mapped, bam_picard
+        file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls
         file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_for_mapped
 
 
@@ -346,8 +346,40 @@ process samtools {
     prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     """
     samtools sort $bam -T ${bam.baseName}_sorted -o ${bam.baseName}_sorted.bam
-	samtools index ${bam.baseName}_sorted.bam
+    samtools index ${bam.baseName}_sorted.bam
     """
 }
 
 
+/*
+ * STEP 2.3 - Picard
+ */
+
+process picard {
+    tag "$prefix"
+    publishDir "${params.outdir}/04-picard", mode: 'copy'
+
+    input:
+    file bam from bam_picard
+
+    output:
+    file '*_dedup_sorted.bam' into bam_dedup_spp, bam_dedup_ngsplot, bam_dedup_deepTools, bam_dedup_macs, bam_dedup_saturation, bam_dedup_epic, bam_depud_mpileup
+    file '*_dedup_sorted.bam.bai' into bai_dedup_deepTools, bai_dedup_spp, bai_dedup_ngsplot, bai_dedup_macs, bai_dedup_saturation, bai_dedup_epic
+    file '*_dedup_sorted.bed' into bed_dedup,bed_epic_dedup
+    file '*_picardDupMetrics.txt' into picard_reports
+
+    script:
+    prefix = bam[0].toString() - ~/(\.sorted)?(\.bam)?$/
+    """
+    java -jar \$PICARD_HOME/picard.jar MarkDuplicates \\
+		INPUT=$bam \\
+		OUTPUT=${prefix}_dedup.bam \\
+		ASSUME_SORTED=true \\
+		REMOVE_DUPLICATES=true \\
+		METRICS_FILE=${prefix}_picardDupMetrics.txt \\
+		VALIDATION_STRINGENCY=LENIENT \\
+		PROGRAM_RECORD_ID='null'
+	samtools sort ${prefix}_dedup.bam -o ${prefix}_dedup_sorted.bam -T ${prefix}
+	samtools index ${prefix}_dedup_sorted.bam
+    """
+}
