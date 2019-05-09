@@ -26,7 +26,8 @@ Pipeline overview:
      - 4.2 : R for table merging
  - 5. : Stats
      - 5.1 : MultiQC
-	 - 5.2 : Bamstats
+     - 5.2 : Bamstats
+     - 5.3 : Picard CalculateHsMetrics
  - 6. : Output Description HTML
  ----------------------------------------------------------------------------------------
 */
@@ -68,6 +69,9 @@ def helpMessage() {
     Annotation options
       --resourceDatasets            Path to resource datasets.
       --saveDuplicates              Save duplicated sequences.
+    Statistics:
+      --bamstatsTargets             Path to capture targets bed file
+      --picardstatsTargets          Path to capture header targets file
     Other options:
       --outdir                      The output directory where the results will be saved
     """.stripIndent()
@@ -139,7 +143,7 @@ if( params.resourceDatasets ){
 params.multiqc_config = "${baseDir}/conf/multiqc_config.yaml"
 
 if (params.multiqc_config){
-	multiqc_config = file(params.multiqc_config)
+    multiqc_config = file(params.multiqc_config)
 }
 
 // Output files options
@@ -147,6 +151,20 @@ params.saveReference = false
 params.saveTrimmed = false
 params.saveAlignedIntermediates = false
 params.saveDuplicates = false
+
+// Stats options
+params.bamstatsTargets = false
+if( params.bamstatsTargets ){
+    bamstatsTargets_file = file(params.bamstatsTargets)
+    if( !bamstatsTargets_file.exists() ) exit 1, "bamstats Targets file not found: ${params.bamstatsTargets}."
+}
+
+params.picardstatsTargets = false
+if( params.picardstatsTargets ){
+    picardstatsTargets_file = file(params.picardstatsTargets)
+    if( !picardstatsTargets_file.exists() ) exit 1, "bamstats Targets file not found: ${params.picardstatsTargets}."
+}
+
 
 // Validate  mandatory inputs
 
@@ -351,7 +369,7 @@ process samtools {
     file bam from bwa_bam
 
     output:
-        file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls
+        file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls, bam_stats, picard_stats
         file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_for_mapped
         file '*_stats.txt' into samtools_stats
 
@@ -377,7 +395,7 @@ if (!params.keepduplicates){
         file bam from bam_picard
 
         output:
-        file '*_dedup_sorted.bam' into bam_dedup_spp, bam_dedup_ngsplot, bam_dedup_deepTools, bam_dedup_macs, bam_dedup_saturation, bam_dedup_epic, bam_dedup_mpileup
+        file '*_dedup_sorted.bam' into bam_dedup_spp, bam_dedup_ngsplot, bam_dedup_deepTools, bam_dedup_macs, bam_dedup_saturation, bam_dedup_epic, bam_dedup_mpileup, dedup_bam_stats, dedup_picard_stats
         file '*_dedup_sorted.bam.bai' into bai_dedup_deepTools, bai_dedup_spp, bai_dedup_ngsplot, bai_dedup_macs, bai_dedup_saturation, bai_dedup_epic
         file '*_picardDupMetrics.txt' into picard_reports
 
@@ -507,7 +525,7 @@ process rmerge {
 
     input:
     set val(name), file(header_table) from header_table
-	file flt from kggseq_flt_file
+    file flt from kggseq_flt_file
 
     output:
     file '*_all_annotated.tab' into r_merged_tables
@@ -515,8 +533,8 @@ process rmerge {
     script:
     prefix = name - ~/(_header)?(\.tabel)?$/
     """
-	Rscript /bin/merge_parse.R $prefix
-	"""
+    Rscript /bin/merge_parse.R $prefix
+    """
 }
 
 /*
@@ -545,4 +563,102 @@ process rmerge {
     """
     multiqc -d . --config $multiqc_config
     """
+}
+
+/*
+ * STEP 5.2 - Bamstats
+ */
+if (!params.keepduplicates){
+     process samstats {
+        tag "$prefix"
+        publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
+
+        input:
+        file region_list from bamstatsTargets_file
+        set val(name), file(sorted_bam) from bam_stats
+
+
+        output:
+        file '*_bamstat.txt' into bamstats_result
+
+        script:
+        prefix = name - ~/(_sorted)?(\.bam)?$/
+
+        """
+        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic
+        """
+    }
+
+} else {
+     process samstats {
+        tag "$prefix"
+        publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
+
+        input:
+        file region_list from bamstatsTargets_file
+        set val(name), file(sorted_bam) from dedup_bam_stats
+
+
+        output:
+        file '*_bamstat.txt' into bamstats_result
+
+        script:
+        prefix = name - ~/(_sorted)?(\.bam)?$/
+
+        """
+        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic
+        """
+    }
+}
+
+/*
+ * STEP 5.2 - Picard CalculateHsMetrics
+ */
+if (!params.keepduplicates){
+     process picardmetrics {
+        tag "$prefix"
+        publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
+
+        input:
+        file bi_ti from picardstatsTargets
+        set val(name), file(sorted_bam) from picard_stats
+
+
+        output:
+        file '*_hsMetrics.out' into picardstats_result
+        file 'hsMetrics_all.out' into picardstats_all_result
+
+        script:
+        prefix = name - ~/(_sorted)?(\.bam)?$/
+
+        """
+        picard CalculateHsMetrics BI=$bi_ti TI=$bi_ti I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
+		echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
+		grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",$22,$24,$25,$29,$30,$31,$32,$33}' >> hsMetrics_all.out
+        """
+    }
+
+} else {
+     process picardmetrics {
+        tag "$prefix"
+        publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
+
+        input:
+        file bi_ti from picardstatsTargets
+        set val(name), file(sorted_bam) from dedup_picard_stats
+
+
+        output:
+        file '*_hsMetrics.out' into picardstats_result
+        file 'hsMetrics_all.out' into picardstats_all_result
+
+        script:
+        prefix = name - ~/(_sorted)?(\.bam)?$/
+
+        """
+        picard CalculateHsMetrics BI=$bi_ti TI=$bi_ti I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
+		echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
+		grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",$22,$24,$25,$29,$30,$31,$32,$33}' >> hsMetrics_all.out
+        """
+    }
 }
