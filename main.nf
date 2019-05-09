@@ -515,19 +515,7 @@ process rmerge {
     script:
     prefix = name - ~/(_header)?(\.tabel)?$/
     """
-	#!/usr/bin/Rscript
-	args = commandArgs(trailingOnly=TRUE)
-	sample <- $prefix
-	
-	variants_phased <- read.table(paste(sample,"_header.table",sep=""),header=T,sep="\t")
-	variants_annotated <- read.csv(paste(sample,"_annot.txt.flt.txt",sep=""),header=T,sep="\t")
-	variants_annotated$Chromosome <- paste("chr",variants_annotated$Chromosome,sep="")
-
-	variants_phased$merged <- paste(variants_phased$CHROM,variants_phased$POS,sep="_")
-	variants_annotated$merged <- paste(variants_annotated$Chromosome,variants_annotated$StartPositionHg38,sep="_")
-
-	table_comp <- merge(variants_phased,variants_annotated,by="merged",all.x=F,all.y=T)
-	write.table(table_comp,file=paste(sample,"_all_annotated.tab",sep=""),sep="\t",row.names=F)
+	Rscript /bin/merge_parse.R $prefix
 	"""
 }
 
@@ -535,8 +523,7 @@ process rmerge {
  * STEP 5.1 - MultiQC
  */
 
-
- process multiqc_preprocessing {
+ process multiqc {
     tag "$prefix"
     publishDir "${params.outdir}/08-stats/multiQC", mode: 'copy'
 
@@ -556,7 +543,6 @@ process rmerge {
     prefix = fastqc[0].toString() - '_fastqc.html' - 'fastqc/'
 
     """
-    multiqc -d . -v --config $multiqc_config
+    multiqc -d . --config $multiqc_config
     """
-
 }
