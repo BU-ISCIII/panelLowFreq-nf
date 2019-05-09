@@ -16,8 +16,9 @@ Pipeline overview:
      - 1.2: Trimmomatic
  - 2. : Mapping
      - 2.1 : BWA alignment against reference genome
-     - 2.2 : Samtools for generate a pileup for the BAM files
+     - 2.2 : Samtools
      - 2.3 : Picard metrics for the analysis of target-capture sequencing experiments
+     - 2.4 : Samtools for generate a pileup for the depud BAM files
  - 3. : Variant Calling
     - 3.1 : VarScan for variant calling
  - 4. : KGGSeq 
@@ -308,7 +309,6 @@ process bwa {
     input:
     file reads from trimmed_paired_reads_bwa
     file index from bwa_index
-    file fasta from fasta_file
 
     output:
     file '*.bam' into bwa_bam
@@ -316,8 +316,8 @@ process bwa {
     script:
     prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     """
-    bwa mem -M $index $reads | samtools view -bS -> ${prefix}.bam
-    $fasta - > ${prefix}.bam
+    bwa mem -M $index $reads -> ${prefix}.sam
+	samtools view -bS ${prefix}.sam -o ${prefix}.bam
     """
 }
 
@@ -327,7 +327,7 @@ process bwa {
  */
 
 process samtools {
-    tag "$prefix"
+    tag "${bam.baseName}"
     publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
             saveAs: { filename ->
                     if (filename.indexOf(".stats.txt") > 0) "stats/$filename"
@@ -341,9 +341,7 @@ process samtools {
         file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls
         file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_for_mapped
 
-
     script:
-    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     """
     samtools sort $bam -T ${bam.baseName}_sorted -o ${bam.baseName}_sorted.bam
     samtools index ${bam.baseName}_sorted.bam
@@ -363,13 +361,13 @@ process picard {
     file bam from bam_picard
 
     output:
-    file '*_dedup_sorted.bam' into bam_dedup_spp, bam_dedup_ngsplot, bam_dedup_deepTools, bam_dedup_macs, bam_dedup_saturation, bam_dedup_epic, bam_depud_mpileup
+    file '*_dedup_sorted.bam' into bam_dedup_spp, bam_dedup_ngsplot, bam_dedup_deepTools, bam_dedup_macs, bam_dedup_saturation, bam_dedup_epic, bam_dedup_mpileup
     file '*_dedup_sorted.bam.bai' into bai_dedup_deepTools, bai_dedup_spp, bai_dedup_ngsplot, bai_dedup_macs, bai_dedup_saturation, bai_dedup_epic
     file '*_dedup_sorted.bed' into bed_dedup,bed_epic_dedup
     file '*_picardDupMetrics.txt' into picard_reports
 
     script:
-    prefix = bam[0].toString() - ~/(\.sorted)?(\.bam)?$/
+    prefix = bam[0].toString() - ~/(_sorted)?(\.bam)?$/
     """
     java -jar \$PICARD_HOME/picard.jar MarkDuplicates \\
 		INPUT=$bam \\
@@ -381,5 +379,27 @@ process picard {
 		PROGRAM_RECORD_ID='null'
 	samtools sort ${prefix}_dedup.bam -o ${prefix}_dedup_sorted.bam -T ${prefix}
 	samtools index ${prefix}_dedup_sorted.bam
+    """
+}
+
+/*
+ * STEP 2.4 - Samtools pileup
+ */
+
+process mpileup {
+    tag "$prefix"
+    publishDir "${params.outdir}/05-samtools_NC", mode: 'copy'
+
+    input:
+    file dedup_bam from bam_dedup_mpileup
+	file fasta from fasta_file
+
+    output:
+    file '*.pileup' into pileup_results
+
+    script:
+    prefix = dedup_bam[0].toString() - ~/(_dedup)?(\.sorted)?(\.bam)?$/
+    """
+    samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dedup_bam -> $prefix".pileup"
     """
 }
