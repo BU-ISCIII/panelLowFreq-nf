@@ -376,7 +376,7 @@ if (!params.keepduplicates){
         script:
         prefix = bam[0].toString() - ~/(_sorted)?(\.bam)?$/
         """
-        java -jar \$PICARD_HOME/picard.jar MarkDuplicates \\
+        picard MarkDuplicates \\
             INPUT=$bam \\
             OUTPUT=${prefix}_dedup.bam \\
             ASSUME_SORTED=true \\
@@ -453,7 +453,7 @@ process varscan {
 
     script:
     """
-    java -jar -Xmx10g $VARSCAN_HOME/VarScan.v2.3.9.jar mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 > ${pileup.baseName}.vcf
+    varscan mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 > ${pileup.baseName}.vcf
     """
 }
 
@@ -484,7 +484,7 @@ process varscan {
     script:
     """
     bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
-    java -jar -Xmx10g $KGGSEQ_HOME/kggseq.jar --no-resource-check --no-lib-check --buildver hg38 --vcf-file $vcf --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
+    kggseq --no-resource-check --no-lib-check --buildver hg38 --vcf-file $vcf --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
     gunzip *_annot.txt.flt.txt.gz
     cp header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
     """
