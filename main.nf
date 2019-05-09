@@ -403,3 +403,23 @@ process mpileup {
     samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dedup_bam -> $prefix".pileup"
     """
 }
+
+/*
+ * STEP 3.1 - VarScan
+ */
+
+process varscan {
+    tag "${pileup.baseName}"
+    publishDir "${params.outdir}/06-VarScan", mode: 'copy'
+
+    input:
+    file pileup from pileup_results
+
+    output:
+    file '*.vcf' into vcf_file
+
+    script:
+    """
+	java -jar -Xmx10g $VARSCAN_HOME/VarScan.v2.3.9.jar mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 -> ${pileup.baseName}".vcf"
+    """
+}
