@@ -24,7 +24,9 @@ Pipeline overview:
  - 4. : KGGSeq 
      - 4.1 : Post-Analysis variant annotation and filtering
      - 4.2 : R for table merging
- - 5. : MultiQC
+ - 5. : Stats
+     - 5.1 : MultiQC
+	 - 5.2 : Bamstats
  - 6. : Output Description HTML
  ----------------------------------------------------------------------------------------
 */
@@ -132,6 +134,12 @@ params.resourceDatasets = false
 if( params.resourceDatasets ){
     resourceDatasets_file = file(params.resourceDatasets)
     if( !resourceDatasets_file.exists() ) exit 1, "Resource dataset file not found: ${params.resourceDatasets}."
+}
+
+params.multiqc_config = "${baseDir}/conf/multiqc_config.yaml"
+
+if (params.multiqc_config){
+	multiqc_config = file(params.multiqc_config)
 }
 
 // Output files options
@@ -509,7 +517,7 @@ process rmerge {
     """
 	#!/usr/bin/Rscript
 	args = commandArgs(trailingOnly=TRUE)
-	sample <- args[1]
+	sample <- $prefix
 	
 	variants_phased <- read.table(paste(sample,"_header.table",sep=""),header=T,sep="\t")
 	variants_annotated <- read.csv(paste(sample,"_annot.txt.flt.txt",sep=""),header=T,sep="\t")
@@ -521,4 +529,34 @@ process rmerge {
 	table_comp <- merge(variants_phased,variants_annotated,by="merged",all.x=F,all.y=T)
 	write.table(table_comp,file=paste(sample,"_all_annotated.tab",sep=""),sep="\t",row.names=F)
 	"""
+}
+
+/*
+ * STEP 5.1 - MultiQC
+ */
+
+
+ process multiqc_preprocessing {
+    tag "$prefix"
+    publishDir "${params.outdir}/08-stats/multiQC", mode: 'copy'
+
+    input:
+    file multiqc_config
+    file (fastqc:'fastqc/*') from fastqc_results.collect()
+    file ('trimommatic/*') from trimmomatic_results.collect()
+    file ('trimommatic/*') from trimmomatic_fastqc_reports.collect()
+
+    output:
+    file '*multiqc_report.html' into multiqc_report
+    file '*_data' into multiqc_data
+    file '.command.err' into multiqc_stderr
+    val prefix into multiqc_prefix
+
+    script:
+    prefix = fastqc[0].toString() - '_fastqc.html' - 'fastqc/'
+
+    """
+    multiqc -d . -v --config $multiqc_config
+    """
+
 }
