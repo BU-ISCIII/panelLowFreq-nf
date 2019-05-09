@@ -17,27 +17,35 @@ RUN echo "Installing FastQC app" && \
     scif install /opt/trimmomatic_v0.38_centos7.scif && \
     echo "Installing samtools app" && \
     scif install /opt/samtools_v1.9_centos7.scif && \
+    echo "Installing picard app" && \
+    scif install /opt/scif_app_recipes/picard_v1.140_centos7.scif && \
+    echo "Installing htslib app" && \
+    scif install /opt/scif_app_recipes/htslib_v1.9_centos7.scif && \
+    echo "Installing bcftools app" && \
+    scif install /opt/scif_app_recipes/bcftools_v1.9_centos7.scif && \
     echo "Installing bedtools app" && \
     scif install /opt/bedtools_v2.27_centos7.scif && \
     echo "Installing varscan app" && \
     scif install /opt/varscan_v2.3.9_centos7.scif && \
     echo "Installing multiqc app" && \
     scif install /opt/multiqc_v1.4_centos7.scif && \
+    echo "Installing R app" && \
+    scif install /opt/scif_app_recipes/R_v3.5.1_centos7.scif && \
     echo "Installing bwa app" && \
     scif install /opt/bwa_v0.7.17_centos7.scif && \
     echo "Installing kggseq app" && \
     scif install /opt/kggseq_v1.1_centos7.scif
+    echo "Installing bamutil app" && \
+    scif install /opt/scif_app_recipes/bamutil_v1.0.13_centos7.scif
 
-    ## R packages
-
-    # Install core R dependencies
-    RUN echo "r <- getOption('repos'); r['CRAN'] <- 'https://ftp.acc.umu.se/mirror/CRAN/'; options(repos = r);" > ~/.Rprofile
 
 # Include ENV variables
 ENV LC_ALL=en_US.UTF-8
 ENV PATH=$PATH:/scif/apps/aragorn/bin
+ENV PATH=$PATH:/scif/apps/bamutil/bin
 ENV PATH=$PATH:/scif/apps/barrnap/bin
 ENV PATH=$PATH:/scif/apps/bedtools/bin
+ENV PATH=$PATH:/scif/apps/bcftools/bin
 ENV PATH=$PATH:/scif/apps/bowtie2/bin
 ENV PATH=$PATH:/scif/apps/bwa/bin
 ENV PATH=$PATH:/scif/apps/fastqc/bin
@@ -62,8 +70,10 @@ ENV PATH=$PATH:/scif/apps/trimmomatic/bin
 ENV PATH=$PATH:/scif/apps/unicycler/bin
 ENV PATH=$PATH:/scif/apps/varscan/bin
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/aragorn/lib/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/bamutil/lib/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/barrnap/lib/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/bedtools/lib/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/bcftools/lib/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/bowtie2/lib/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/bwa/lib/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/scif/apps/fastqc/lib/lib

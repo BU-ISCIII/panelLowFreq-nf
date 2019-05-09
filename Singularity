@@ -33,7 +33,7 @@ From: buisciii/centos7_base_image:latest
     echo "Installing varscan app" && \
     scif install /opt/scif_app_recipes/varscan_v2.3.9_centos7.scif && \
     echo "Installing bcftools app" && \
-    scif install /opt/scif_app_recipes/bedtools_v2.26_centos7.scif && \
+    scif install /opt/scif_app_recipes/bcftools_v1.9_centos7.scif && \
     echo "Installing kggseq app" && \
     scif install /opt/scif_app_recipes/kggseq_v1.1_centos7.scif && \
     echo "Installing R app" && \
