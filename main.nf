@@ -23,7 +23,7 @@ Pipeline overview:
     - 3.1 : VarScan for variant calling
  - 4. : KGGSeq 
      - 4.1 : Post-Analysis variant annotation and filtering
-	 - 4.2 : R for table merging
+     - 4.2 : R for table merging
  - 5. : MultiQC
  - 6. : Output Description HTML
  ----------------------------------------------------------------------------------------
@@ -57,6 +57,7 @@ def helpMessage() {
       --trimmomatic_mininum_length  Minimum length of reads
     Mapping options
       --saveAlignedIntermediates    Save intermediate bam files.
+      --keepduplicates                Keep duplicate reads. Picard MarkDuplicates step skipped.
     Veriant calling
       --maxDepth                    Maximum number of reads per input file to read at a position. Default 20000
       --minBaseQ                    Minimum base quality for a base to be considered. Default 0.
@@ -107,6 +108,8 @@ if( params.bwa_index ){
 // SingleEnd option
 params.singleEnd = false
 
+//Mapping-duplicates defaults
+params.keepduplicates = false
 
 // Trimming default
 params.notrim = false
@@ -175,6 +178,7 @@ summary['Reads']               = params.reads
 summary['Data Type']           = params.singleEnd ? 'Single-End' : 'Paired-End'
 if(params.bwa_index)  summary['BWA Index'] = params.bwa_index
 else if(params.fasta) summary['Fasta Ref'] = params.fasta
+summary['Keep Duplicates'] = params.keepduplicates
 summary['Container']           = workflow.container
 if(workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Current home']        = "$HOME"
@@ -318,7 +322,7 @@ process bwa {
     prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     """
     bwa mem -M $index $reads > ${prefix}.sam
-	samtools view -bS ${prefix}.sam -o ${prefix}.bam
+    samtools view -bS ${prefix}.sam -o ${prefix}.bam
     """
 }
 
@@ -341,13 +345,13 @@ process samtools {
     output:
         file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls
         file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_for_mapped
-		file '*_stats.txt' into samtools_stats
+        file '*_stats.txt' into samtools_stats
 
     script:
     """
     samtools sort $bam -T ${bam.baseName}_sorted -o ${bam.baseName}_sorted.bam
     samtools index ${bam.baseName}_sorted.bam
-	samtools stats ${bam.baseName}_sorted.bam > ${bam.baseName}_stats.txt
+    samtools stats ${bam.baseName}_sorted.bam > ${bam.baseName}_stats.txt
     """
 }
 
@@ -355,57 +359,83 @@ process samtools {
 /*
  * STEP 2.3 - Picard
  */
-
-process picard {
-    tag "$prefix"
-    publishDir "${params.outdir}/04-picard", mode: 'copy'
+if (!params.keepduplicates){
+    process picard {
+        tag "$prefix"
+        publishDir "${params.outdir}/04-picard", mode: 'copy'
             
-			
-    input:
-    file bam from bam_picard
+            
+        input:
+        file bam from bam_picard
 
-    output:
-    file '*_dedup_sorted.bam' into bam_dedup_spp, bam_dedup_ngsplot, bam_dedup_deepTools, bam_dedup_macs, bam_dedup_saturation, bam_dedup_epic, bam_dedup_mpileup
-    file '*_dedup_sorted.bam.bai' into bai_dedup_deepTools, bai_dedup_spp, bai_dedup_ngsplot, bai_dedup_macs, bai_dedup_saturation, bai_dedup_epic
-    file '*_picardDupMetrics.txt' into picard_reports
+        output:
+        file '*_dedup_sorted.bam' into bam_dedup_spp, bam_dedup_ngsplot, bam_dedup_deepTools, bam_dedup_macs, bam_dedup_saturation, bam_dedup_epic, bam_dedup_mpileup
+        file '*_dedup_sorted.bam.bai' into bai_dedup_deepTools, bai_dedup_spp, bai_dedup_ngsplot, bai_dedup_macs, bai_dedup_saturation, bai_dedup_epic
+        file '*_picardDupMetrics.txt' into picard_reports
 
-    script:
-    prefix = bam[0].toString() - ~/(_sorted)?(\.bam)?$/
-    """
-    java -jar \$PICARD_HOME/picard.jar MarkDuplicates \\
-		INPUT=$bam \\
-		OUTPUT=${prefix}_dedup.bam \\
-		ASSUME_SORTED=true \\
-		REMOVE_DUPLICATES=true \\
-		METRICS_FILE=${prefix}_picardDupMetrics.txt \\
-		VALIDATION_STRINGENCY=LENIENT \\
-		PROGRAM_RECORD_ID='null'
-	samtools sort ${prefix}_dedup.bam -o ${prefix}_dedup_sorted.bam -T ${prefix}
-	samtools index ${prefix}_dedup_sorted.bam
-    """
-}
-
+        script:
+        prefix = bam[0].toString() - ~/(_sorted)?(\.bam)?$/
+        """
+        java -jar \$PICARD_HOME/picard.jar MarkDuplicates \\
+            INPUT=$bam \\
+            OUTPUT=${prefix}_dedup.bam \\
+            ASSUME_SORTED=true \\
+            REMOVE_DUPLICATES=true \\
+            METRICS_FILE=${prefix}_picardDupMetrics.txt \\
+            VALIDATION_STRINGENCY=LENIENT \\
+            PROGRAM_RECORD_ID='null'
+        samtools sort ${prefix}_dedup.bam -o ${prefix}_dedup_sorted.bam -T ${prefix}
+        samtools index ${prefix}_dedup_sorted.bam
+        """
+    }
 /*
- * STEP 2.4 - Samtools pileup
+ * STEP 2.4 - Samtools pileup picard
  */
 
-process mpileup {
-    tag "$prefix"
-    publishDir "${params.outdir}/05-samtools_NC", mode: 'copy'
+    process mpileup {
+        tag "$prefix"
+        publishDir "${params.outdir}/05-samtools_NC", mode: 'copy'
 
-    input:
-    file dedup_bam from bam_dedup_mpileup
-	file fasta from fasta_file
+        input:
+        file dedup_bam from bam_dedup_mpileup
+        file fasta from fasta_file
 
-    output:
-    file '*.pileup' into pileup_results
+        output:
+        file '*.pileup' into pileup_results
 
-    script:
-    prefix = dedup_bam[0].toString() - ~/(_dedup)?(\.sorted)?(\.bam)?$/
-    """
-    samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dedup_bam > $prefix".pileup"
-    """
+        script:
+        prefix = dedup_bam[0].toString() - ~/(_dedup)?(\.sorted)?(\.bam)?$/
+        """
+        samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dedup_bam > $prefix".pileup"
+        """
+    }
+    
+/*
+ * STEP 2.4 - Samtools pileup keepduplicates
+ */
+
+} else {
+    process mpileup {
+        tag "$prefix"
+        publishDir "${params.outdir}/05-samtools_NC", mode: 'copy'
+
+        input:
+        file dup_bam from bam_samtolls
+        file fasta from fasta_file
+
+        output:
+        file '*.pileup' into pileup_results
+
+        script:
+        prefix = dup_bam[0].toString() - ~/(_dedup)?(\.sorted)?(\.bam)?$/
+        """
+        samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dup_bam > $prefix".pileup"
+        """
+    }
+
 }
+
+
 
 /*
  * STEP 3.1 - VarScan
@@ -423,7 +453,7 @@ process varscan {
 
     script:
     """
-	java -jar -Xmx10g $VARSCAN_HOME/VarScan.v2.3.9.jar mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 > ${pileup.baseName}.vcf
+    java -jar -Xmx10g $VARSCAN_HOME/VarScan.v2.3.9.jar mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 > ${pileup.baseName}.vcf
     """
 }
 
@@ -437,8 +467,8 @@ process varscan {
             saveAs: { filename ->
                     if (filename.indexOf(".table") > 0) "bcftools/$filename"
                     else if (filename.indexOf("_all_annotated.tab") > 0) "R_merge/$filename"
-					else if (filename.indexOf("_annot.txt*") > 0) "kggseq/$filename"
-					else if (filename.indexOf("_header.table") > 0) "header_table/$filename"
+                    else if (filename.indexOf("_annot.txt*") > 0) "kggseq/$filename"
+                    else if (filename.indexOf("_header.table") > 0) "header_table/$filename"
             }
 
     input:
@@ -446,16 +476,16 @@ process varscan {
 
     output:
     file '*.table' into bcftools_tables
-	file '*_all_annotated.tab' into r_merged_tables
-	file '*_annot.txt.flt.txt' into kggseq_flt_file
-	file '*_annot.txt.log' into kggseq_annot_log
-	file '*_header.table' into header_table
+    file '*_all_annotated.tab' into r_merged_tables
+    file '*_annot.txt.flt.txt' into kggseq_flt_file
+    file '*_annot.txt.log' into kggseq_annot_log
+    file '*_header.table' into header_table
 
     script:
     """
-	bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
-	java -jar -Xmx10g $KGGSEQ_HOME/kggseq.jar --no-resource-check --no-lib-check --buildver hg38 --vcf-file $vcf --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
-	gunzip *_annot.txt.flt.txt.gz
-	cp header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
+    bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
+    java -jar -Xmx10g $KGGSEQ_HOME/kggseq.jar --no-resource-check --no-lib-check --buildver hg38 --vcf-file $vcf --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
+    gunzip *_annot.txt.flt.txt.gz
+    cp header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
     """
 }
