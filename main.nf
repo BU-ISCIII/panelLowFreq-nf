@@ -12,17 +12,16 @@
 ----------------------------------------------------------------------------------------
 Pipeline overview:
  - 1. : Preprocessing
- 	- 1.1: FastQC for raw sequencing reads quality control
- 	- 1.2: Trimmomatic
+     - 1.1: FastQC for raw sequencing reads quality control
+     - 1.2: Trimmomatic
  - 2. : Mapping
- 	- 2.1 : BWA alignment against reference genome
- 	- 2.2 : Picard metrics for the analysis of target-capture sequencing experiments
-	- 2.3 : Bedtools for calculating exons with less than 20x of depth coverage
+     - 2.1 : BWA alignment against reference genome
+     - 2.2 : Samtools for generate a pileup for the BAM files
+     - 2.3 : Picard metrics for the analysis of target-capture sequencing experiments
  - 3. : Variant Calling
- 	- 3.1 : Samtools for generate a pileup for the BAM files
-	- 3.2 : VarScan for variant calling
+    - 3.2 : VarScan for variant calling
  - 4. : KGGSeq 
- 	- 4.1 : Post-Analysis variant annotation and filtering
+     - 4.1 : Post-Analysis variant annotation and filtering
  - 5. : MultiQC
  - 6. : Output Description HTML
  ----------------------------------------------------------------------------------------
@@ -34,9 +33,9 @@ def helpMessage() {
      BU-ISCIII/panelLowFreq-nf : Low frequency panel v${version}
     =========================================
     Usage:
-	
+    
     The typical command for running the pipeline is as follows:
-	
+    
     nextflow run BU-ISCIII/panelLowFreq-nf --reads '*_R{1,2}.fastq.gz' --fasta hg38.fullAnalysisSet.fa
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes).
@@ -56,14 +55,14 @@ def helpMessage() {
       --trimmomatic_mininum_length  Minimum length of reads
     Mapping options
       --saveAlignedIntermediates    Save intermediate bam files.
-	Veriant calling
-	  --maxDepth                    Maximum number of reads per input file to read at a position. Default 20000
-	  --minBaseQ                    Minimum base quality for a base to be considered. Default 0.
-	  --minVarFreq                  Minimum variant allele frequency threshold. Default 0.05
-	  --pValue                      Default p-value threshold for calling variants. Default 0.99
+    Veriant calling
+      --maxDepth                    Maximum number of reads per input file to read at a position. Default 20000
+      --minBaseQ                    Minimum base quality for a base to be considered. Default 0.
+      --minVarFreq                  Minimum variant allele frequency threshold. Default 0.05
+      --pValue                      Default p-value threshold for calling variants. Default 0.99
     Annotation options
       --resourceDatasets            Path to resource datasets.
-	  --saveDuplicates              Save duplicated sequences.
+      --saveDuplicates              Save duplicated sequences.
     Other options:
       --outdir                      The output directory where the results will be saved
     """.stripIndent()
@@ -185,7 +184,7 @@ summary['Script dir']          = workflow.projectDir
 summary['Save Reference']      = params.saveReference
 summary['Save Trimmed']        = params.saveTrimmed
 summary['Save Intermeds']      = params.saveAlignedIntermediates
-summary['Save Duplicates']     = params.saveDuplicates
+summary['Save Duplicates']     = params.saveDuplicatesbed
 summary['VarScan p-value threshold'] = params.pValue
 if( params.notrim ){
     summary['Trimming Step'] = 'Skipped'
@@ -219,23 +218,23 @@ try {
  * Build BWA index
  */
 if(!params.bwa_index && fasta_file){
-	process makeBWAindex {
-		tag "${fasta.baseName}"
-		publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
-				saveAs: { params.saveReference ? it : null }, mode: 'copy'
+    process makeBWAindex {
+        tag "${fasta.baseName}"
+        publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
+                saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
-		input:
-		file fasta from fasta_file
+        input:
+        file fasta from fasta_file
 
-		output:
-		file "${fasta}*" into bwa_index
+        output:
+        file "${fasta}*" into bwa_index
 
-		script:
-		"""
-		mkdir BWAIndex
-		bwa index -a bwtsw $fasta
-		"""
-	}
+        script:
+        """
+        mkdir BWAIndex
+        bwa index -a bwtsw $fasta
+        """
+    }
 }
 
 
@@ -245,23 +244,23 @@ if(!params.bwa_index && fasta_file){
 
 
 process fastqc {
-	tag "$prefix"
-	publishDir "${params.outdir}/01-fastqc", mode: 'copy',
-		saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+    tag "$prefix"
+    publishDir "${params.outdir}/01-fastqc", mode: 'copy',
+        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
-	input:
-	set val(name), file(reads) from raw_reads_fastqc
+    input:
+    set val(name), file(reads) from raw_reads_fastqc
 
-	output:
-	file '*_fastqc.{zip,html}' into fastqc_results
-	file '.command.out' into fastqc_stdout
+    output:
+    file '*_fastqc.{zip,html}' into fastqc_results
+    file '.command.out' into fastqc_stdout
 
-	script:
+    script:
 
-	prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
-	"""
-	fastqc --nogroup -t 1 -k 8 $reads
-	"""
+    prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
+    """
+    fastqc --nogroup -t 1 -k 8 $reads
+    """
 }
 
 
@@ -270,31 +269,31 @@ process fastqc {
  */
 
 process trimming {
-	tag "$prefix"
-	publishDir "${params.outdir}/02-trimming", mode: 'copy',
-		saveAs: {filename ->
-			if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
-			else if (filename.indexOf(".log") > 0) "logs/$filename"
+    tag "$prefix"
+    publishDir "${params.outdir}/02-trimming", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
+            else if (filename.indexOf(".log") > 0) "logs/$filename"
    else if (filename.indexOf(".fastq.gz") > 0) "trimmed/$filename"
-			else params.saveTrimmed ? filename : null
-	}
+            else params.saveTrimmed ? filename : null
+    }
 
-	input:
-	set val(name), file(reads) from raw_reads_trimming
+    input:
+    set val(name), file(reads) from raw_reads_trimming
 
-	output:
-	file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa
-	file '*_unpaired_*.fastq.gz' into trimmed_unpaired_reads
-	file '*_fastqc.{zip,html}' into trimmomatic_fastqc_reports
-	file '*.log' into trimmomatic_results
+    output:
+    file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa
+    file '*_unpaired_*.fastq.gz' into trimmed_unpaired_reads
+    file '*_fastqc.{zip,html}' into trimmomatic_fastqc_reports
+    file '*.log' into trimmomatic_results
 
-	script:
-	prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
-	"""
-	trimmomatic PE -phred33 $reads -threads 1 $prefix"_paired_R1.fastq" $prefix"_unpaired_R1.fastq" $prefix"_paired_R2.fastq" $prefix"_unpaired_R2.fastq" ILLUMINACLIP:${params.trimmomatic_adapters_file}:${params.trimmomatic_adapters_parameters} SLIDINGWINDOW:${params.trimmomatic_window_length}:${params.trimmomatic_window_value} MINLEN:${params.trimmomatic_mininum_length} 2> ${name}.log
-	gzip *.fastq
-	fastqc -q *_paired_*.fastq.gz
-	"""
+    script:
+    prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
+    """
+    trimmomatic PE -phred33 $reads -threads 1 $prefix"_paired_R1.fastq" $prefix"_unpaired_R1.fastq" $prefix"_paired_R2.fastq" $prefix"_unpaired_R2.fastq" ILLUMINACLIP:${params.trimmomatic_adapters_file}:${params.trimmomatic_adapters_parameters} SLIDINGWINDOW:${params.trimmomatic_window_length}:${params.trimmomatic_window_value} MINLEN:${params.trimmomatic_mininum_length} 2> ${name}.log
+    gzip *.fastq
+    fastqc -q *_paired_*.fastq.gz
+    """
 }
 
 /*
@@ -302,23 +301,53 @@ process trimming {
  */
 
 process bwa {
-	tag "$prefix"
-	publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
-			saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
+    tag "$prefix"
+    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+            saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
 
-	input:
-	file reads from trimmed_paired_reads_bwa
-	file index from bwa_index
-	file fasta from fasta_file
+    input:
+    file reads from trimmed_paired_reads_bwa
+    file index from bwa_index
+    file fasta from fasta_file
 
-	output:
-	file '*.bam' into bwa_bam
+    output:
+    file '*.bam' into bwa_bam
 
-	script:
-	prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-	"""
-	bwa mem $fasta $reads | samtools view -bS -o 
-	$fasta - > ${prefix}.bam
-	"""
-	}
+    script:
+    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    """
+    bwa mem -M $index $reads | samtools view -bS -> ${prefix}.bam
+    $fasta - > ${prefix}.bam
+    """
+}
+
+
+/*
+ * STEP 2.2 - Samtools post-alignment processing
+ */
+
+process samtools {
+    tag "$prefix"
+    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+            saveAs: { filename ->
+                    if (filename.indexOf(".stats.txt") > 0) "stats/$filename"
+                    else params.saveAlignedIntermediates ? filename : null
+            }
+
+    input:
+    file bam from bwa_bam
+
+    output:
+        file '*_sorted.bam' into bam_for_mapped, bam_picard
+        file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_for_mapped
+
+
+    script:
+    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    """
+    samtools sort $bam -T ${bam.baseName}_sorted -o ${bam.baseName}_sorted.bam
+	samtools index ${bam.baseName}_sorted.bam
+    """
+}
+
 
