@@ -23,6 +23,7 @@ Pipeline overview:
     - 3.1 : VarScan for variant calling
  - 4. : KGGSeq 
      - 4.1 : Post-Analysis variant annotation and filtering
+	 - 4.2 : R for table merging
  - 5. : MultiQC
  - 6. : Output Description HTML
  ----------------------------------------------------------------------------------------
@@ -420,6 +421,39 @@ process varscan {
 
     script:
     """
-	java -jar -Xmx10g $VARSCAN_HOME/VarScan.v2.3.9.jar mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 -> ${pileup.baseName}".vcf"
+	java -jar -Xmx10g $VARSCAN_HOME/VarScan.v2.3.9.jar mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 -> ${pileup.baseName}.vcf
+    """
+}
+
+/*
+ * STEP 4.1 - KGGSeq
+ */
+
+process varscan {
+    tag "${vcf.baseName}"
+    publishDir "${params.outdir}/07-Annotation", mode: 'copy',
+            saveAs: { filename ->
+                    if (filename.indexOf(".table") > 0) "bcftools/$filename"
+                    else if (filename.indexOf("_all_annotated.tab") > 0) "R_merge/$filename"
+					else if (filename.indexOf("_annot.txt*") > 0) "kggseq/$filename"
+					else if (filename.indexOf("_header.table") > 0) "header_table/$filename"
+            }
+
+    input:
+    file vcf from vcf_file
+
+    output:
+    file '*.table' into bcftools_tables
+	file '*_all_annotated.tab' into r_merged_tables
+	file '*_annot.txt.flt.txt' into kggseq_flt_file
+	file '*_annot.txt.log' into kggseq_annot_log
+	file '*_header.table' into header_table
+
+    script:
+    """
+	bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' -> ${vcf.baseName}.table
+	java -jar -Xmx10g $KGGSEQ_HOME/kggseq.jar --no-resource-check --no-lib-check --buildver hg38 --vcf-file $vcf --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
+	gunzip *_annot.txt.flt.txt.gz
+	cp header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
     """
 }
