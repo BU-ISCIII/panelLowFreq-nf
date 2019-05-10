@@ -34,7 +34,7 @@ RUN echo "Installing FastQC app" && \
     echo "Installing bwa app" && \
     scif install /opt/bwa_v0.7.17_centos7.scif && \
     echo "Installing kggseq app" && \
-    scif install /opt/kggseq_v1.1_centos7.scif
+    scif install /opt/kggseq_v1.1_centos7.scif && \
     echo "Installing bamutil app" && \
     scif install /opt/scif_app_recipes/bamutil_v1.0.13_centos7.scif
 
