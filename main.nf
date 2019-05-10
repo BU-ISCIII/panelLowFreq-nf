@@ -139,7 +139,6 @@ if (params.multiqc_config){
 params.saveReference = false
 params.saveTrimmed = false
 params.saveAlignedIntermediates = false
-params.saveDuplicates = false
 
 // Stats options
 params.bamstatsTargets = false
@@ -229,7 +228,6 @@ summary['Script dir']          = workflow.projectDir
 summary['Save Reference']      = params.saveReference
 summary['Save Trimmed']        = params.saveTrimmed
 summary['Save Intermeds']      = params.saveAlignedIntermediates
-summary['Save Duplicates']     = params.saveDuplicatesbed
 summary['VarScan p-value threshold'] = params.pValue
 if( params.notrim ){
     summary['Trimming Step'] = 'Skipped'
@@ -405,8 +403,8 @@ if (!params.keepduplicates){
         file bam from bam_picard
 
         output:
-        file '*_dedup_sorted.bam' into bam_dedup_spp, bam_dedup_ngsplot, bam_dedup_deepTools, bam_dedup_macs, bam_dedup_saturation, bam_dedup_epic, bam_dedup_mpileup, dedup_bam_stats, dedup_picard_stats
-        file '*_dedup_sorted.bam.bai' into bai_dedup_deepTools, bai_dedup_spp, bai_dedup_ngsplot, bai_dedup_macs, bai_dedup_saturation, bai_dedup_epic
+        file '*_dedup_sorted.bam' into bam_dedup_mpileup, dedup_bam_stats, dedup_picard_stats
+        file '*_dedup_sorted.bam.bai' into bai_dedup_epic
         file '*_picardDupMetrics.txt' into picard_reports
 
         script:
