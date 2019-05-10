@@ -201,6 +201,14 @@ if( params.bamstatsTargets ){
 		.into { bamstatsTargets_file; bamstatsTargets_file_picard }
 }
 
+// Create channel for resource Datasets
+if( params.resourceDatasets ){
+    Channel
+        .fromPath(params.resourceDatasets)
+        .ifEmpty { exit 1, "resource Datasets file not found: ${params.resourceDatasets}" }
+		.into { resourceDatasets_file }
+}
+
 // Header log info
 log.info "========================================="
 log.info " BU-ISCIII/panelLowFreq-nf : Low frequency panel v${version}"
@@ -500,6 +508,7 @@ process kggseq {
 
     input:
     file vcf from vcf_file
+	file resource from resourceDatasets_file
 
     output:
     file '*.table' into bcftools_tables
@@ -510,7 +519,7 @@ process kggseq {
     script:
     """
     bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
-    kggseq --no-resource-check --no-lib-check --buildver hg38 --vcf-file $vcf --resource ${resourceDatasets} --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
+    kggseq --no-lib-check --buildver hg38 --vcf-file $vcf --resource $resource --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
     gunzip *_annot.txt.flt.txt.gz
     cp header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
     """
