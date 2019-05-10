@@ -521,7 +521,7 @@ process varscan {
 
 process rmerge {
     tag "$prefix"
-    publishDir "${params.outdir}/07-Annotation/R_merge", mode: 'copy',
+    publishDir "${params.outdir}/07-Annotation/R_merge", mode: 'copy'
 
     input:
     set val(name), file(header_table) from header_table
