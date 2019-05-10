@@ -418,7 +418,7 @@ if (!params.keepduplicates){
  * STEP 2.4 - Samtools pileup picard
  */
 
-    process mpileup {
+    process mpileup_picard {
         tag "$prefix"
         publishDir "${params.outdir}/05-samtools_NC", mode: 'copy'
 
@@ -487,7 +487,7 @@ process varscan {
  * STEP 4.1 - KGGSeq
  */
 
-process varscan {
+process kggseq {
     tag "${vcf.baseName}"
     publishDir "${params.outdir}/07-Annotation", mode: 'copy',
             saveAs: { filename ->
@@ -569,6 +569,26 @@ process rmerge {
  * STEP 5.2 - Bamstats
  */
 if (!params.keepduplicates){
+     process samstats_picard {
+        tag "$prefix"
+        publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
+
+        input:
+        file region_list from bamstatsTargets_file
+        set val(name), file(sorted_bam) from dedup_bam_stats
+
+
+        output:
+        file '*_bamstat.txt' into bamstats_result
+
+        script:
+        prefix = name - ~/(_sorted)?(\.bam)?$/
+
+        """
+        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic
+        """
+    }
+} else {
      process samstats {
         tag "$prefix"
         publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
@@ -589,32 +609,36 @@ if (!params.keepduplicates){
         """
     }
 
-} else {
-     process samstats {
-        tag "$prefix"
-        publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
-
-        input:
-        file region_list from bamstatsTargets_file
-        set val(name), file(sorted_bam) from dedup_bam_stats
-
-
-        output:
-        file '*_bamstat.txt' into bamstats_result
-
-        script:
-        prefix = name - ~/(_sorted)?(\.bam)?$/
-
-        """
-        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic
-        """
-    }
 }
 
 /*
  * STEP 5.2 - Picard CalculateHsMetrics
  */
 if (!params.keepduplicates){
+     process picardmetrics_picard {
+        tag "$prefix"
+        publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
+
+        input:
+        file bi_ti from picardstatsTargets
+        set val(name), file(sorted_bam) from dedup_picard_stats
+
+
+        output:
+        file '*_hsMetrics.out' into picardstats_result
+        file 'hsMetrics_all.out' into picardstats_all_result
+
+        script:
+        prefix = name - ~/(_sorted)?(\.bam)?$/
+
+        """
+        picard CalculateHsMetrics BI=$bi_ti TI=$bi_ti I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
+        echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
+        grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
+        """
+    }
+
+} else {
      process picardmetrics {
         tag "$prefix"
         publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
@@ -634,31 +658,7 @@ if (!params.keepduplicates){
         """
         picard CalculateHsMetrics BI=$bi_ti TI=$bi_ti I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
         echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
-        grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",$22,$24,$25,$29,$30,$31,$32,$33}' >> hsMetrics_all.out
-        """
-    }
-
-} else {
-     process picardmetrics {
-        tag "$prefix"
-        publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
-
-        input:
-        file bi_ti from picardstatsTargets
-        set val(name), file(sorted_bam) from dedup_picard_stats
-
-
-        output:
-        file '*_hsMetrics.out' into picardstats_result
-        file 'hsMetrics_all.out' into picardstats_all_result
-
-        script:
-        prefix = name - ~/(_sorted)?(\.bam)?$/
-
-        """
-        picard CalculateHsMetrics BI=$bi_ti TI=$bi_ti I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
-        echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
-        grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "$prefix",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
+        grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
         """
     }
 }
