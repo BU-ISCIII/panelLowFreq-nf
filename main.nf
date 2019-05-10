@@ -46,7 +46,6 @@ def helpMessage() {
       --reads                       Path to input data (must be surrounded with quotes).
       --fasta                       Path to human Fasta reference
     References
-      --bwa_index                   Path to BWA index
       --saveReference               Save reference file and indexes.
     Options:
       --singleEnd                   Specifies that the input is single end reads
@@ -98,16 +97,7 @@ if (params.help){
 params.fasta = false
 if( params.fasta ){
     fasta_file = file(params.fasta)
-    if( !fasta_file.exists() ) exit 1, "Fasta file not found: ${params.fasta}."
-}
-
-
-// bwa index
-params.bwa_index = false
-
-if( params.bwa_index ){
-    bwa_file = file(params.bwa_index)
-    if( !fasta_file.exists() ) exit 1, "BWAIndex file not found: ${params.bwa_index}."
+    if( !fasta_file.exists() ) exit 1, "Fasta reference file not found: ${params.fasta}."
 }
 
 
@@ -187,11 +177,11 @@ Channel
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nIf this is single-end data, please specify --singleEnd on the command line." }
     .into { raw_reads_fastqc; raw_reads_trimming }
 
-// Create channel for bwa_index if supplied
-if( params.bwa_index ){
-    bwa_index = Channel
-        .fromPath(params.bwa_index)
-        .ifEmpty { exit 1, "BWA index not found: ${params.bwa_index}" }
+// Create channel for fasta reference if supplied
+if( params.fasta ){
+    fasta = Channel
+        .fromPath(params.fasta)
+        .ifEmpty { exit 1, "Fasta reference not found: ${params.fasta}" }
 }
 
 
@@ -202,8 +192,7 @@ log.info "========================================="
 def summary = [:]
 summary['Reads']               = params.reads
 summary['Data Type']           = params.singleEnd ? 'Single-End' : 'Paired-End'
-if(params.bwa_index)  summary['BWA Index'] = params.bwa_index
-else if(params.fasta) summary['Fasta Ref'] = params.fasta
+ummary['Fasta Ref']            = params.fasta
 summary['Keep Duplicates'] = params.keepduplicates
 summary['Container']           = workflow.container
 if(workflow.revision) summary['Pipeline Release'] = workflow.revision
@@ -249,23 +238,22 @@ try {
 /*
  * Build BWA index
  */
-if(!params.bwa_index && fasta_file){
-    process makeBWAindex {
-        tag "${fasta.baseName}"
-        publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
-                saveAs: { params.saveReference ? it : null }, mode: 'copy'
+process makeBWAindex {
+    tag "${fasta.baseName}"
+    publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
+            saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
-        input:
-        file fasta from fasta_file
+    input:
+    file fasta from fasta_file
 
-        output:
-        file "${fasta}*" into bwa_index
+    output:
+    file "${fasta}*" into bwa_index
 
-        script:
-        """
-        mkdir BWAIndex
-        bwa index -a bwtsw $fasta
-        """
+    script:
+    """
+    mkdir BWAIndex
+    bwa index -a bwtsw $fasta
+    """
     }
 }
 
