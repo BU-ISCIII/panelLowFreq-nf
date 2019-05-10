@@ -67,7 +67,6 @@ def helpMessage() {
       --pValue                      Default p-value threshold for calling variants. Default 0.99
     Annotation options
       --resourceDatasets            Path to resource datasets.
-      --saveDuplicates              Save duplicated sequences.
     Statistics:
       --bamstatsTargets             Path to capture targets bed file
       --picardstatsTargets          Path to capture header targets file
@@ -156,6 +155,7 @@ if( params.picardstatsTargets ){
 }
 
 
+
 // Validate  mandatory inputs
 
 if (! params.reads ) exit 1, "Missing reads: $params.reads. Specify path with --reads"
@@ -179,11 +179,27 @@ Channel
 
 // Create channel for fasta reference if supplied
 if( params.fasta ){
-    fasta = Channel
+    Channel
         .fromPath(params.fasta)
         .ifEmpty { exit 1, "Fasta reference not found: ${params.fasta}" }
+		.into { fasta_file; fasta_file_pileup_picard; fasta_file_pileup }
 }
 
+// Create channel for picard stat targets
+if( params.picardstatsTargets ){
+    Channel
+        .fromPath(params.picardstatsTargets)
+        .ifEmpty { exit 1, "Picard stats file not found: ${params.picardstatsTargets}" }
+		.into { picardstatsTargets_file; picardstatsTargets_file_picard }
+}
+
+// Create channel for bamstats stat targets
+if( params.bamstatsTargets ){
+    Channel
+        .fromPath(params.bamstatsTargets)
+        .ifEmpty { exit 1, "Picard stats file not found: ${params.bamstatsTargets}" }
+		.into { bamstatsTargets_file; bamstatsTargets_file_picard }
+}
 
 // Header log info
 log.info "========================================="
@@ -192,7 +208,7 @@ log.info "========================================="
 def summary = [:]
 summary['Reads']               = params.reads
 summary['Data Type']           = params.singleEnd ? 'Single-End' : 'Paired-End'
-ummary['Fasta Ref']            = params.fasta
+summary['Fasta Ref']            = params.fasta
 summary['Keep Duplicates'] = params.keepduplicates
 summary['Container']           = workflow.container
 if(workflow.revision) summary['Pipeline Release'] = workflow.revision
@@ -251,10 +267,8 @@ process makeBWAindex {
 
     script:
     """
-    mkdir BWAIndex
     bwa index -a bwtsw $fasta
     """
-    }
 }
 
 
@@ -412,7 +426,7 @@ if (!params.keepduplicates){
 
         input:
         file dedup_bam from bam_dedup_mpileup
-        file fasta from fasta_file
+        file fasta from fasta_file_pileup_picard
 
         output:
         file '*.pileup' into pileup_results
@@ -435,7 +449,7 @@ if (!params.keepduplicates){
 
         input:
         file dup_bam from bam_samtolls
-        file fasta from fasta_file
+        file fasta from fasta_file_pileup
 
         output:
         file '*.pileup' into pileup_results
@@ -489,7 +503,6 @@ process kggseq {
 
     output:
     file '*.table' into bcftools_tables
-    file '*_all_annotated.tab' into r_merged_tables
     file '*_annot.txt.flt.txt' into kggseq_flt_file
     file '*_annot.txt.log' into kggseq_annot_log
     file '*_header.table' into header_table
@@ -562,7 +575,7 @@ if (!params.keepduplicates){
         publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
 
         input:
-        file region_list from bamstatsTargets_file
+        file region_list from bamstatsTargets_file_picard
         set val(name), file(sorted_bam) from dedup_bam_stats
 
 
@@ -608,7 +621,7 @@ if (!params.keepduplicates){
         publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
 
         input:
-        file bi_ti from picardstatsTargets
+        file bi_ti from picardstatsTargets_file_picard
         set val(name), file(sorted_bam) from dedup_picard_stats
 
 
@@ -632,7 +645,7 @@ if (!params.keepduplicates){
         publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
 
         input:
-        file bi_ti from picardstatsTargets
+        file bi_ti from picardstatsTargets_file
         set val(name), file(sorted_bam) from picard_stats
 
 
