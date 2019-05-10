@@ -1,4 +1,4 @@
-Botstrap: docker
+Bootstrap: docker
 From: buisciii/centos7_base_image:latest
 
 %files
