@@ -658,7 +658,7 @@ if (!params.keepduplicates){
         """
         picard CalculateHsMetrics BI=$bi_ti TI=$bi_ti I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
         echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
-        grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
+        grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "$prefix",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
         """
     }
 }
