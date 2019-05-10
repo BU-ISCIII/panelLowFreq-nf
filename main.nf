@@ -7,7 +7,7 @@
  #### Homepage / Documentation
  https://github.com/BU-ISCIII/panelLowFreq-nf
  @#### Authors
- Sara Monzon <smonzon@isciii.es>
+ Sarai Varona <s.varona@isciii.es>
 ----------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------
 Pipeline overview:
@@ -432,7 +432,7 @@ if (!params.keepduplicates){
         script:
         prefix = dedup_bam[0].toString() - ~/(_dedup)?(\.sorted)?(\.bam)?$/
         """
-        samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dedup_bam > $prefix".pileup"
+        samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dedup_bam > ${prefix}.pileup
         """
     }
     
@@ -455,7 +455,7 @@ if (!params.keepduplicates){
         script:
         prefix = dup_bam[0].toString() - ~/(_dedup)?(\.sorted)?(\.bam)?$/
         """
-        samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dup_bam > $prefix".pileup"
+        samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dup_bam > ${prefix}.pileup
         """
     }
 
@@ -533,7 +533,7 @@ process rmerge {
     script:
     prefix = name - ~/(_header)?(\.tabel)?$/
     """
-    Rscript /bin/merge_parse.R $prefix
+    Rscript ${baseDir}/bin/merge_parse.R $prefix
     """
 }
 
@@ -633,8 +633,8 @@ if (!params.keepduplicates){
 
         """
         picard CalculateHsMetrics BI=$bi_ti TI=$bi_ti I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
-		echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
-		grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",$22,$24,$25,$29,$30,$31,$32,$33}' >> hsMetrics_all.out
+        echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
+        grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",$22,$24,$25,$29,$30,$31,$32,$33}' >> hsMetrics_all.out
         """
     }
 
@@ -657,8 +657,8 @@ if (!params.keepduplicates){
 
         """
         picard CalculateHsMetrics BI=$bi_ti TI=$bi_ti I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
-		echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
-		grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",$22,$24,$25,$29,$30,$31,$32,$33}' >> hsMetrics_all.out
+        echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
+        grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",$22,$24,$25,$29,$30,$31,$32,$33}' >> hsMetrics_all.out
         """
     }
 }
