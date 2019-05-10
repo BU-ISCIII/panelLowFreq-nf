@@ -182,7 +182,7 @@ if( params.fasta ){
     Channel
         .fromPath(params.fasta)
         .ifEmpty { exit 1, "Fasta reference not found: ${params.fasta}" }
-		.into { fasta_file; fasta_file_pileup_picard; fasta_file_pileup }
+        .into { fasta_file; fasta_file_pileup_picard; fasta_file_pileup }
 }
 
 // Create channel for picard stat targets
@@ -190,7 +190,7 @@ if( params.picardstatsTargets ){
     Channel
         .fromPath(params.picardstatsTargets)
         .ifEmpty { exit 1, "Picard stats file not found: ${params.picardstatsTargets}" }
-		.into { picardstatsTargets_file; picardstatsTargets_file_picard }
+        .into { picardstatsTargets_file; picardstatsTargets_file_picard }
 }
 
 // Create channel for bamstats stat targets
@@ -198,7 +198,7 @@ if( params.bamstatsTargets ){
     Channel
         .fromPath(params.bamstatsTargets)
         .ifEmpty { exit 1, "Picard stats file not found: ${params.bamstatsTargets}" }
-		.into { bamstatsTargets_file; bamstatsTargets_file_picard }
+        .into { bamstatsTargets_file; bamstatsTargets_file_picard }
 }
 
 // Create channel for resource Datasets
@@ -206,7 +206,7 @@ if( params.resourceDatasets ){
     Channel
         .fromPath(params.resourceDatasets)
         .ifEmpty { exit 1, "resource Datasets file not found: ${params.resourceDatasets}" }
-		.into { resourceDatasets_file }
+        .into { resourceDatasets_file }
 }
 
 // Header log info
@@ -508,7 +508,7 @@ process kggseq {
 
     input:
     file vcf from vcf_file
-	file resource from resourceDatasets_file
+    file resource from resourceDatasets_file
 
     output:
     file '*.table' into bcftools_tables
