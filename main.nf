@@ -181,7 +181,7 @@ if( params.fasta ){
     Channel
         .fromPath(params.fasta)
         .ifEmpty { exit 1, "Fasta reference not found: ${params.fasta}" }
-        .into { fasta_file; fasta_file_pileup_picard; fasta_file_pileup }
+        .into { fasta_file; fasta_bwamem; fasta_file_pileup_picard; fasta_file_pileup }
 }
 
 // Create channel for picard stat targets
@@ -347,10 +347,11 @@ process bwa {
 
     input:
     file reads from trimmed_paired_reads_bwa
-    file index from bwa_index
+    file index from fasta_bwamem
 
     output:
     file '*.bam' into bwa_bam
+	file '*.sam' into bwa_sam_file
 
     script:
     prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
