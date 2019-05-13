@@ -347,7 +347,8 @@ process bwa {
 
     input:
     file reads from trimmed_paired_reads_bwa
-    file index from fasta_bwamem
+    file fasta from fasta_bwamem
+	file index from bwa_index
 
     output:
     file '*.bam' into bwa_bam
@@ -356,8 +357,7 @@ process bwa {
     script:
     prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     """
-    bwa mem -M $index $reads > ${prefix}.sam
-    samtools view -bS ${prefix}.sam -o ${prefix}.bam
+    bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
     """
 }
 
