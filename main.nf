@@ -25,9 +25,9 @@ Pipeline overview:
      - 4.1 : Post-Analysis variant annotation and filtering
      - 4.2 : R for table merging
  - 5. : Stats
-     - 5.1 : MultiQC
      - 5.2 : Bamstats
      - 5.3 : Picard CalculateHsMetrics
+     - 5.1 : MultiQC
  - 6. : Output Description HTML
  ----------------------------------------------------------------------------------------
 */
@@ -377,9 +377,9 @@ process samtools {
     file bam from bwa_bam
 
     output:
-        file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls, bam_stats, picard_stats
-        file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_for_mapped
-        file '*_stats.txt' into samtools_stats
+    file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls, bam_stats, picard_stats
+    file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_for_mapped
+    file '*_stats.txt' into samtools_stats
 
     script:
     """
@@ -513,7 +513,7 @@ if (!params.keepduplicates){
         script:
         prefix = name - ~/(_header)?(\.tabel)?$/
         """
-        Rscript ${baseDir}/bin/merge_parse.R $prefix
+        Rscript $baseDir/bin/merge_parse.R $prefix
         """
     }
 
@@ -779,4 +779,8 @@ if (params.keepduplicates){
         multiqc -d . --config $multiqc_config
         """
     }
+}
+
+workflow.onComplete {
+    log.info "BU-ISCIII - Pipeline complete"
 }
