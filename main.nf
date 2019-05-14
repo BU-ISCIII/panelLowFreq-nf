@@ -367,7 +367,7 @@ process bwa {
 
 process samtools {
     tag "${bam.baseName}"
-    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+    publishDir path: "${params.outdir}/03-bwa", mode: 'copy',
             saveAs: { filename ->
                     if (filename.indexOf("_stats.txt") > 0) "stats/$filename"
                     else params.saveAlignedIntermediates ? filename : null
@@ -443,12 +443,12 @@ if (!params.keepduplicates){
         samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dedup_bam > ${prefix}.pileup
         """
     }
-    
+}
 /*
  * STEP 2.4 - Samtools pileup keepduplicates
  */
 
-} else {
+if (params.keepduplicates){
     process mpileup {
         tag "$prefix"
         publishDir "${params.outdir}/05-samtools_NC", mode: 'copy'
@@ -596,7 +596,8 @@ if (!params.keepduplicates){
         bam stats --regionList $region_list --in $sorted_bam --baseSum --basic
         """
     }
-} else {
+}
+if (params.keepduplicates){
      process samstats {
         tag "$prefix"
         publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
@@ -645,8 +646,9 @@ if (!params.keepduplicates){
         grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
         """
     }
+}
 
-} else {
+if (params.keepduplicates){
      process picardmetrics {
         tag "$prefix"
         publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
