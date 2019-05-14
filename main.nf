@@ -352,7 +352,6 @@ process bwa {
 
     output:
     file '*.bam' into bwa_bam
-	file '*.sam' into bwa_sam_file
 
     script:
     prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
