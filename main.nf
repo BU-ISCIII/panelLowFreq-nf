@@ -394,7 +394,7 @@ if (params.indexFiles){
         script:
         prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
         """
-        bwa mem -M $index/"*.fasta" $reads | samtools view -bT $fasta - > ${prefix}.bam
+        bwa mem -M $fasta | samtools view -bT $fasta - > ${prefix}.bam
         """
     }
 }
