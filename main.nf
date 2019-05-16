@@ -348,35 +348,56 @@ process trimming {
 }
 
 if (!params.indexFiles){
-bwa_index_path = bwa_index
-} else{
-bwa_index_path = indexFiles_folder
-}
-
 /*
  * STEP 2.1 - BWA alignment
  */
 
-process bwa {
-    tag "$prefix"
-    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
-            saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
+	process bwa {
+	    tag "$prefix"
+	    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+	            saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
 
-    input:
-    file reads from trimmed_paired_reads_bwa
-    file fasta from fasta_bwamem
-    file index from bwa_index_path
+	    input:
+	    file reads from trimmed_paired_reads_bwa
+	    file fasta from fasta_bwamem
+	    file index from bwa_index
 
-    output:
-    file '*.bam' into bwa_bam
+	    output:
+	    file '*.bam' into bwa_bam
 
-    script:
-    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-    """
-    bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
-    """
+	    script:
+	    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+	    """
+	    bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
+	    """
+	}
 }
 
+if (params.indexFiles){
+/*
+ * STEP 2.1 - BWA alignment
+ */
+
+	process bwa_index {
+	    tag "$prefix"
+	    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+	            saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
+
+	    input:
+	    file reads from trimmed_paired_reads_bwa
+	    file fasta from fasta_bwamem
+	    file index from indexFiles_folder
+
+	    output:
+	    file '*.bam' into bwa_bam
+
+	    script:
+	    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+	    """
+	    bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
+	    """
+	}
+}
 
 /*
  * STEP 2.2 - Samtools post-alignment processing
