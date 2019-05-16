@@ -47,6 +47,7 @@ def helpMessage() {
       --fasta                       Path to human Fasta reference
     References
       --saveReference               Save reference file and indexes.
+	  --indexFiles                  Path to folder with reference index
     Options:
       --singleEnd                   Specifies that the input is single end reads
     Trimming options
@@ -105,6 +106,7 @@ params.singleEnd = false
 
 //Mapping-duplicates defaults
 params.keepduplicates = false
+params.indexFiles = false
 
 // Trimming default
 params.notrim = false
@@ -208,6 +210,13 @@ if( params.resourceDatasets ){
         .into { resourceDatasets_file_picard; resourceDatasets_file }
 }
 
+// Create channel for reference index files
+if( params.indexFiles ){
+    Channel
+        .fromPath(params.indexFiles)
+        .ifEmpty { exit 1, "resource Datasets file not found: ${params.indexFiles}" }
+        .into { indexFiles_folder }
+}
 // Header log info
 log.info "========================================="
 log.info " BU-ISCIII/panelLowFreq-nf : Low frequency panel v${version}"
@@ -225,6 +234,7 @@ summary['Current path']        = "$PWD"
 summary['Working dir']         = workflow.workDir
 summary['Output dir']          = params.outdir
 summary['Script dir']          = workflow.projectDir
+summary['Path to index']      = params.indexFiles
 summary['Save Reference']      = params.saveReference
 summary['Save Trimmed']        = params.saveTrimmed
 summary['Save Intermeds']      = params.saveAlignedIntermediates
@@ -257,26 +267,27 @@ try {
               "============================================================"
 }
 
+if (!params.indexFiles){
 /*
  * Build BWA index
  */
-process makeBWAindex {
-    tag "${fasta.baseName}"
-    publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
-            saveAs: { params.saveReference ? it : null }, mode: 'copy'
+	process makeBWAindex {
+	    tag "${fasta.baseName}"
+    	publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
+    	        saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
-    input:
-    file fasta from fasta_file
+	    input:
+	    file fasta from fasta_file
 
-    output:
-    file "${fasta}*" into bwa_index
+	    output:
+	    file "${fasta}*" into bwa_index
 
-    script:
-    """
-    bwa index -a bwtsw $fasta
-    """
+	    script:
+	    """
+	    bwa index -a bwtsw $fasta
+    	"""
+	}
 }
-
 
 /*
  * STEP 1.1 - FastQC
@@ -336,6 +347,12 @@ process trimming {
     """
 }
 
+if (!params.indexFiles){
+bwa_index_path = bwa_index
+} else{
+bwa_index_path = indexFiles_folder
+}
+
 /*
  * STEP 2.1 - BWA alignment
  */
@@ -348,7 +365,7 @@ process bwa {
     input:
     file reads from trimmed_paired_reads_bwa
     file fasta from fasta_bwamem
-    file index from bwa_index
+    file index from bwa_index_path
 
     output:
     file '*.bam' into bwa_bam
@@ -558,7 +575,7 @@ if (!params.keepduplicates){
         file 'hsMetrics_all.out' into picardstats_all_result_picard
 
         script:
-        prefix = sorted_bam[0].toString() - ~/(_sorted)?(\.bam)?$/
+        prefix = sorted_bam[0].toString() - ~/(_sorted)?(\.bam)(_paired)(_dedup)?$/
         """
         picard CalculateHsMetrics BI=$picard_targer TI=$picard_targer I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
         echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
