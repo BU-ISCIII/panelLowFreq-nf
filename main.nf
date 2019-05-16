@@ -47,7 +47,7 @@ def helpMessage() {
       --fasta                       Path to human Fasta reference
     References
       --saveReference               Save reference file and indexes.
-	  --indexFiles                  Path to folder with reference index
+      --indexFiles                  Path to folder with reference index
     Options:
       --singleEnd                   Specifies that the input is single end reads
     Trimming options
@@ -183,7 +183,7 @@ if( params.fasta ){
     Channel
         .fromPath(params.fasta)
         .ifEmpty { exit 1, "Fasta reference not found: ${params.fasta}" }
-        .into { fasta_file; fasta_bwamem; fasta_file_pileup_picard; fasta_file_pileup }
+        .into { fasta_file; fasta_bwamem; fasta_file_pileup_picard; fasta_file_pileup; fasta_bwa_index }
 }
 
 // Create channel for picard stat targets
@@ -271,22 +271,22 @@ if (!params.indexFiles){
 /*
  * Build BWA index
  */
-	process makeBWAindex {
-	    tag "${fasta.baseName}"
-    	publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
-    	        saveAs: { params.saveReference ? it : null }, mode: 'copy'
+    process makeBWAindex {
+        tag "${fasta.baseName}"
+        publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
+                saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
-	    input:
-	    file fasta from fasta_file
+        input:
+        file fasta from fasta_file
 
-	    output:
-	    file "${fasta}*" into bwa_index
+        output:
+        file "${fasta}*" into bwa_index
 
-	    script:
-	    """
-	    bwa index -a bwtsw $fasta
-    	"""
-	}
+        script:
+        """
+        bwa index -a bwtsw $fasta
+        """
+    }
 }
 
 /*
@@ -352,25 +352,25 @@ if (!params.indexFiles){
  * STEP 2.1 - BWA alignment
  */
 
-	process bwa {
-	    tag "$prefix"
-	    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
-	            saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
+    process bwa {
+        tag "$prefix"
+        publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+                saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
 
-	    input:
-	    file reads from trimmed_paired_reads_bwa
-	    file fasta from fasta_bwamem
-	    file index from bwa_index
+        input:
+        file reads from trimmed_paired_reads_bwa
+        file fasta from fasta_bwamem
+        file index from bwa_index
 
-	    output:
-	    file '*.bam' into bwa_bam
+        output:
+        file '*.bam' into bwa_bam
 
-	    script:
-	    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-	    """
-	    bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
-	    """
-	}
+        script:
+        prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+        """
+        bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
+        """
+    }
 }
 
 if (params.indexFiles){
@@ -378,25 +378,25 @@ if (params.indexFiles){
  * STEP 2.1 - BWA alignment
  */
 
-	process bwa_index {
-	    tag "$prefix"
-	    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
-	            saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
+    process bwa_index {
+        tag "$prefix"
+        publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+                saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
 
-	    input:
-	    file reads from trimmed_paired_reads_bwa
-	    file fasta from fasta_bwamem
-	    file index from indexFiles_folder
+        input:
+        file reads from trimmed_paired_reads_bwa
+        file fasta from fasta_bwa_index
+        file index from indexFiles_folder
 
-	    output:
-	    file '*.bam' into bwa_bam
+        output:
+        file '*.bam' into bwa_bam
 
-	    script:
-	    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-	    """
-	    bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
-	    """
-	}
+        script:
+        prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+        """
+        bwa mem -M $index/"*.fasta" $reads | samtools view -bT $fasta - > ${prefix}.bam
+        """
+    }
 }
 
 /*
