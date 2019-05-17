@@ -416,7 +416,7 @@ process samtools {
 
     output:
     file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls, bam_stats, picard_stats
-    file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_for_mapped
+    file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_samtools, bai_bamstats, bai_picard_stats
     file '*_stats.txt' into samtools_stats
 
     script:
@@ -438,10 +438,11 @@ if (!params.keepduplicates){
             
         input:
         file bam from bam_picard
+		file bai from bai_picard
 
         output:
         file '*_dedup_sorted.bam' into bam_dedup_mpileup, dedup_bam_stats, dedup_picard_stats
-        file '*_dedup_sorted.bam.bai' into bai_dedup_stats, bai_dedup_picard_stats
+        file '*_dedup_sorted.bam.bai' into bai_dedup_stats, bai_dedup_picard_stats, bai_dedup_mpileup
         file '*_picardDupMetrics.txt' into picard_reports
 
         script:
@@ -469,6 +470,7 @@ if (!params.keepduplicates){
 
         input:
         file dedup_bam from bam_dedup_mpileup
+		file bai_file from bai_dedup_mpileup
         file fasta from fasta_file_pileup_picard
 
         output:
@@ -652,6 +654,7 @@ if (params.keepduplicates){
 
         input:
         file dup_bam from bam_samtolls
+		file bai_file from bai_samtools
         file fasta from fasta_file_pileup
 
         output:
@@ -748,7 +751,8 @@ if (params.keepduplicates){
 
         input:
         file region_list from bamstatsTargets_file
-        set val(name), file(sorted_bam) from bam_stats
+        file sorted_bam from bam_stats
+		file bai_file from bai_bamstats
 
 
         output:
@@ -772,7 +776,8 @@ if (params.keepduplicates){
 
         input:
         file picard_targer from picardstatsTargets_file
-        set val(name), file(sorted_bam) from picard_stats
+        file sorted_bam from picard_stats
+		file bai_file from bai_picard_stats
 
 
         output:
@@ -780,7 +785,7 @@ if (params.keepduplicates){
         file 'hsMetrics_all.out' into picardstats_all_result
 
         script:
-        prefix = name - ~/(_sorted)?(\.bam)?$/
+        prefix = sorted_bam[0].toString() - ~/(_sorted)?(\.bam)(_paired)(_dedup)?$/
 
         """
         picard CalculateHsMetrics BI=$picard_targer TI=$picard_targer I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
