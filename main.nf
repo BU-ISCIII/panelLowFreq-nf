@@ -441,7 +441,7 @@ if (!params.keepduplicates){
 
         output:
         file '*_dedup_sorted.bam' into bam_dedup_mpileup, dedup_bam_stats, dedup_picard_stats
-        file '*_dedup_sorted.bam.bai' into bai_dedup_epic
+        file '*_dedup_sorted.bam.bai' into bai_dedup_stats, bai_dedup_picard_stats
         file '*_picardDupMetrics.txt' into picard_reports
 
         script:
@@ -565,16 +565,17 @@ if (!params.keepduplicates){
         input:
         file region_list from bamstatsTargets_file_picard
         file sorted_bam from dedup_bam_stats
+		file bai_file from bai_dedup_stats
 
 
         output:
         file '*_bamstat.txt' into bamstats_result_picard
 
         script:
-        prefix = sorted_bam[0].toString() - ~/(_sorted)?(\.bam)?$/
+        prefix = sorted_bam[0].toString() - ~/(_paired)?(_sorted)?(\.bam)?$/
 
         """
-        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic
+        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic 2> ${prefix}_bamstat.txt
         """
     }
 
@@ -589,6 +590,7 @@ if (!params.keepduplicates){
         input:
         file picard_targer from picardstatsTargets_file_picard
         file sorted_bam from dedup_picard_stats
+		file bai_file from bai_dedup_picard_stats
 
 
         output:
@@ -753,10 +755,10 @@ if (params.keepduplicates){
         file '*_bamstat.txt' into bamstats_result
 
         script:
-        prefix = name - ~/(_sorted)?(\.bam)?$/
+        prefix = sorted_bam[0].toString() - ~/(_paired)?(_sorted)?(\.bam)?$/
 
         """
-        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic
+        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic > ${prefix}_bamstat.txt
         """
     }
 
