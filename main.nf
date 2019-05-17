@@ -210,6 +210,13 @@ if( params.resourceDatasets ){
         .into { resourceDatasets_file_picard; resourceDatasets_file }
 }
 
+//Create multiQC config chanel
+if (params.multiqc_config) {
+    Channel
+	    .fromPath(params.multiqc_config, checkIfExists: true)
+		.set { ch_config_for_multiqc }
+}
+
 // Create channel for reference index files
 if( params.indexFiles ){
     Channel
@@ -273,7 +280,7 @@ if (!params.indexFiles){
  */
     process makeBWAindex {
         tag "${fasta.baseName}"
-        publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
+        publishDir path: { params.saveReference ? "${params.outdir}/../REFERENCES" : params.outdir },
                 saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
         input:
