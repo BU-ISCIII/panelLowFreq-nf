@@ -292,10 +292,9 @@ process makeBWAindex {
 
     script:
     """
-    if [ -f "$index" ]; then
-	    :
-	else
-        bwa index -a bwtsw $fasta
+	INDEX_FILE=${index[2]}
+    if [ ! -f "\$INDEX_FILE" ]; then
+	   bwa index -a bwtsw $fasta 
 	fi
     """
 }
