@@ -39,7 +39,7 @@ From: buisciii/centos7_base_image:latest
     echo "Installing R app" && \
     scif install /opt/scif_app_recipes/R_v3.5.1_centos7.scif && \
     echo "Installing multiqc app" && \
-    scif install /opt/scif_app_recipes/multiqc_v1.4_centos7.scif && \
+    scif install /opt/scif_app_recipes/multiqc_v1.7_centos7.scif && \
     echo "Installing bamutil app" && \
     scif install /opt/scif_app_recipes/bamutil_v1.0.13_centos7.scif
 	
