@@ -219,11 +219,10 @@ if (params.multiqc_config) {
 
 // Create channel for reference index files
 if( params.indexFiles ){
-    Channel
-        .fromPath(params.indexFiles)
-        .ifEmpty { exit 1, "resource Datasets file not found: ${params.indexFiles}" }
-        .into { indexFiles_folder }
+        bwa_index = file("${params.indexFiles}")
+		//if( !bwa_index.exists() ) exit 1, "Index files not found: ${params.indexFiles}."
 }
+
 // Header log info
 log.info "========================================="
 log.info " BU-ISCIII/panelLowFreq-nf : Low frequency panel v${version}"
@@ -354,56 +353,28 @@ process trimming {
     """
 }
 
-if (!params.indexFiles){
 /*
  * STEP 2.1 - BWA alignment
  */
 
-    process bwa {
-        tag "$prefix"
-        publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
-                saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
+process bwa {
+    tag "$prefix"
+    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+            saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
 
-        input:
-        file reads from trimmed_paired_reads_bwa
-        file fasta from fasta_bwamem
-        file index from bwa_index
+    input:
+    file reads from trimmed_paired_reads_bwa
+    file fasta from fasta_bwamem
+    file(bwa_index) from bwa_index
 
-        output:
-        file '*.bam' into bwa_bam
+    output:
+    file '*.bam' into bwa_bam
 
-        script:
-        prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-        """
-        bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
-        """
-    }
-}
-
-if (params.indexFiles){
-/*
- * STEP 2.1 - BWA alignment
- */
-
-    process bwa_index {
-        tag "$prefix"
-        publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
-                saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
-
-        input:
-        file reads from trimmed_paired_reads_bwa
-        file fasta from fasta_bwa_index
-        file index from indexFiles_folder
-
-        output:
-        file '*.bam' into bwa_bam
-
-        script:
-        prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-        """
-        bwa mem -M $fasta | samtools view -bT $fasta - > ${prefix}.bam
-        """
-    }
+    script:
+    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    """
+    bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
+    """
 }
 
 /*
