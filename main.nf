@@ -105,7 +105,7 @@ params.singleEnd = false
 
 //Mapping-duplicates defaults
 params.keepduplicates = false
-//params.indexFiles = false
+params.indexFiles = false
 
 // Trimming default
 params.notrim = false
@@ -183,9 +183,9 @@ if( params.fasta ){
         .fromPath(params.fasta)
         .ifEmpty { exit 1, "Fasta reference not found: ${params.fasta}" }
         .into { fasta_file; fasta_bwamem; fasta_file_pileup_picard; fasta_file_pileup; fasta_bwa_index }
-    Channel
-         .fromPath("${params.fasta}.*")
-         .into { bwa_index_path }
+    //Channel
+         //.fromPath("${params.fasta}.*")
+         //.into { bwa_index_path }
 }
 
 // Create channel for picard stat targets
@@ -220,10 +220,12 @@ if (params.multiqc_config) {
 }
 
 // Create channel for reference index files
-//if( params.indexFiles ){
-        //bwa_index = file("${params.indexFiles}")
+if( params.indexFiles ){
+    Channel
+        .fromPath("${params.fasta}.*")
+		.into { bwa_index }
         //if( !bwa_index.exists() ) exit 1, "Index files not found: ${params.indexFiles}."
-//}
+}
 
 // Header log info
 log.info "========================================="
@@ -239,6 +241,7 @@ if(workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Current home']        = "$HOME"
 summary['Current user']        = "$USER"
 summary['Current path']        = "$PWD"
+summary['Index files']         = params.indexFiles
 summary['Working dir']         = workflow.workDir
 summary['Output dir']          = params.outdir
 summary['Script dir']          = workflow.projectDir
@@ -274,29 +277,26 @@ try {
               "============================================================"
 }
 
-
+if ( !params.indexFiles ){
 /*
  * Build BWA index
  */
-process makeBWAindex {
-    tag "${fasta.baseName}"
-    publishDir path: { params.saveReference ? "${params.outdir}/../REFERENCES" : params.outdir },
-            saveAs: { params.saveReference ? it : null }, mode: 'copy'
+    process makeBWAindex {
+        tag "${fasta.baseName}"
+        publishDir path: { params.saveReference ? "${params.outdir}/../REFERENCES" : params.outdir },
+                saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
-    input:
-    file fasta from fasta_file
-    file index from bwa_index_path.collect()
+        input:
+        file fasta from fasta_file
 
-    output:
-    file "${fasta}*" into bwa_index
+        output:
+        file "${fasta}*" into bwa_index
 
-    script:
-    """
-	INDEX_FILE=${index[2]}
-    if [ ! -f "\$INDEX_FILE" ]; then
+        script:
+        """
 	   bwa index -a bwtsw $fasta 
-	fi
-    """
+       """
+    }
 }
 
 /*
@@ -369,7 +369,7 @@ process bwa {
     input:
     file reads from trimmed_paired_reads_bwa
     file fasta from fasta_bwamem
-    file(bwa_index) from bwa_index
+    file bwa_index from bwa_index.collect()
 
     output:
     file '*.bam' into bwa_bam
