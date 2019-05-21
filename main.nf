@@ -541,7 +541,7 @@ if (!params.keepduplicates){
 
 /*
  * STEP 5.2 - Bamstats picard
- */    
+    
      process bamstats_picard {
         tag "$prefix"
         publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
@@ -562,10 +562,10 @@ if (!params.keepduplicates){
         bam stats --regionList $region_list --in $sorted_bam --baseSum --basic 2> ${prefix}_bamstat.txt
         """
     }
-
+ */
 /*
  * STEP 5.2 - Picard CalculateHsMetrics picard
- */
+
  
      process picardmetrics_picard {
         tag "$prefix"
@@ -589,7 +589,7 @@ if (!params.keepduplicates){
         grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
         """
     }
-
+ */
 /*
  * STEP 5.1 - MultiQC picard
  */
@@ -603,8 +603,8 @@ if (!params.keepduplicates){
         file (fastqc:'fastqc/*') from fastqc_results_picard.collect()
         file ('trimommatic/*') from trimmomatic_results_picard.collect()
         file ('trimommatic/*') from trimmomatic_fastqc_reports_picard.collect()
-        file ('bamstats/*') from bamstats_result_picard.collect()
-        file ('picardstats/*') from picardstats_result_picard.collect()
+        //file ('bamstats/*') from bamstats_result_picard.collect()
+        //file ('picardstats/*') from picardstats_result_picard.collect()
 
         output:
         file '*multiqc_report.html' into multiqc_report_picard
