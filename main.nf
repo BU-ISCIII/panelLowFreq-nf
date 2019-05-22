@@ -104,7 +104,7 @@ if( params.fasta ){
 params.singleEnd = false
 
 //Mapping-duplicates defaults
-params.keepduplicates = false
+params.keepduplicates = true
 params.indexFiles = false
 
 // Trimming default
@@ -223,7 +223,7 @@ if (params.multiqc_config) {
 if( params.indexFiles ){
     Channel
         .fromPath("${params.fasta}.*")
-		.into { bwa_index }
+		.into { bwa_index; bwa_index_pileup_picard; bwa_index_pileup }
         //if( !bwa_index.exists() ) exit 1, "Index files not found: ${params.indexFiles}."
 }
 
@@ -290,7 +290,7 @@ if ( !params.indexFiles ){
         file fasta from fasta_file
 
         output:
-        file "${fasta}*" into bwa_index
+        file "${fasta}*" into bwa_index, bwa_index_pileup_picard, bwa_index_pileup
 
         script:
         """
@@ -454,6 +454,7 @@ if (!params.keepduplicates){
         file dedup_bam from bam_dedup_mpileup
         file bai_file from bai_dedup_mpileup
         file fasta from fasta_file_pileup_picard
+		file bwa_index from bwa_index_pileup_picard.collect()
 
         output:
         file '*.pileup' into pileup_results_picard
@@ -491,12 +492,7 @@ if (!params.keepduplicates){
 
     process kggseq_picard {
         tag "${vcf.baseName}"
-        publishDir "${params.outdir}/07-Annotation", mode: 'copy',
-                saveAs: { filename ->
-                        if (filename.indexOf(".table") > 0) "bcftools/$filename"
-                        else if (filename.indexOf("_annot.txt*") > 0) "kggseq/$filename"
-                        else if (filename.indexOf("_header.table") > 0) "header_table/$filename"
-                }
+        publishDir "${params.outdir}/07-Annotation", mode: 'copy'
 
         input:
         file vcf from vcf_file_picard
@@ -526,14 +522,14 @@ if (!params.keepduplicates){
         publishDir "${params.outdir}/07-Annotation/R_merge", mode: 'copy'
 
         input:
-        set val(name), file(header_table) from header_table_picard
+        file header_table from header_table_picard
         file flt from kggseq_flt_file_picard
 
         output:
         file '*_all_annotated.tab' into r_merged_tables_picard
 
         script:
-        prefix = name - ~/(_header)?(\.tabel)?$/
+        prefix = header_table.baseName - ~/(_header)?(\.table)?$/
         """
         Rscript $baseDir/bin/merge_parse.R $prefix
         """
@@ -541,7 +537,7 @@ if (!params.keepduplicates){
 
 /*
  * STEP 5.2 - Bamstats picard
-    
+ */    
      process bamstats_picard {
         tag "$prefix"
         publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
@@ -562,10 +558,10 @@ if (!params.keepduplicates){
         bam stats --regionList $region_list --in $sorted_bam --baseSum --basic 2> ${prefix}_bamstat.txt
         """
     }
- */
+
 /*
  * STEP 5.2 - Picard CalculateHsMetrics picard
-
+ */
  
      process picardmetrics_picard {
         tag "$prefix"
@@ -589,10 +585,11 @@ if (!params.keepduplicates){
         grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
         """
     }
- */
+
+
 /*
  * STEP 5.1 - MultiQC picard
-
+ */
 
     process multiqc_picard {
         tag "$prefix"
@@ -603,8 +600,8 @@ if (!params.keepduplicates){
         file (fastqc:'fastqc/*') from fastqc_results_picard.collect()
         file ('trimommatic/*') from trimmomatic_results_picard.collect()
         file ('trimommatic/*') from trimmomatic_fastqc_reports_picard.collect()
-        //file ('bamstats/*') from bamstats_result_picard.collect()
-        //file ('picardstats/*') from picardstats_result_picard.collect()
+        file ('bamstats/*') from bamstats_result_picard.collect()
+        file ('picardstats/*') from picardstats_result_picard.collect()
 
         output:
         file '*multiqc_report.html' into multiqc_report_picard
@@ -619,7 +616,6 @@ if (!params.keepduplicates){
         multiqc -d . --config $multiqc_config
         """
     }
- */
 
 }
 
@@ -638,12 +634,13 @@ if (params.keepduplicates){
         file dup_bam from bam_samtolls
         file bai_file from bai_samtools
         file fasta from fasta_file_pileup
+		file bwa_index from bwa_index_pileup.collect()
 
         output:
         file '*.pileup' into pileup_results
 
         script:
-        prefix = dup_bam[0].toString() - ~/(_dedup)?(\.sorted)?(\.bam)?$/
+        prefix = dup_bam[0].toString() - ~/(_dedup)?(\_sorted)?(\.bam)?$/
         """
         samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dup_bam > ${prefix}.pileup
         """
@@ -676,12 +673,7 @@ if (params.keepduplicates){
 
     process kggseq {
         tag "${vcf.baseName}"
-        publishDir "${params.outdir}/07-Annotation", mode: 'copy',
-                saveAs: { filename ->
-                        if (filename.indexOf(".table") > 0) "bcftools/$filename"
-                        else if (filename.indexOf("_annot.txt*") > 0) "kggseq/$filename"
-                        else if (filename.indexOf("_header.table") > 0) "header_table/$filename"
-                }
+        publishDir "${params.outdir}/07-Annotation", mode: 'copy'
 
         input:
         file vcf from vcf_file
@@ -698,7 +690,7 @@ if (params.keepduplicates){
         bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
         kggseq --no-lib-check --buildver hg38 --vcf-file $vcf --resource $resource --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
         gunzip *_annot.txt.flt.txt.gz
-        cp header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
+        cp ${baseDir}/assets/header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
         """
     }
 
@@ -711,14 +703,14 @@ if (params.keepduplicates){
         publishDir "${params.outdir}/07-Annotation/R_merge", mode: 'copy'
 
         input:
-        set val(name), file(header_table) from header_table
+        file header_table from header_table
         file flt from kggseq_flt_file
 
         output:
         file '*_all_annotated.tab' into r_merged_tables
 
         script:
-        prefix = name - ~/(_header)?(\.tabel)?$/
+        prefix = header_table.baseName - ~/(_header)?(\.table)?$/
         """
         Rscript ${baseDir}/bin/merge_parse.R $prefix
         """
@@ -775,7 +767,7 @@ if (params.keepduplicates){
         grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
         """
     }
-
+ 
 /*
  * STEP 5.1 - MultiQC
  */
