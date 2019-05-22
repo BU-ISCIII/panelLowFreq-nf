@@ -25,9 +25,9 @@ Pipeline overview:
      - 4.1 : Post-Analysis variant annotation and filtering
      - 4.2 : R for table merging
  - 5. : Stats
-     - 5.1 : MultiQC
      - 5.2 : Bamstats
      - 5.3 : Picard CalculateHsMetrics
+     - 5.1 : MultiQC
  - 6. : Output Description HTML
  ----------------------------------------------------------------------------------------
 */
@@ -104,7 +104,8 @@ if( params.fasta ){
 params.singleEnd = false
 
 //Mapping-duplicates defaults
-params.keepduplicates = false
+params.keepduplicates = true
+params.indexFiles = false
 
 // Trimming default
 params.notrim = false
@@ -181,7 +182,10 @@ if( params.fasta ){
     Channel
         .fromPath(params.fasta)
         .ifEmpty { exit 1, "Fasta reference not found: ${params.fasta}" }
-        .into { fasta_file; fasta_file_pileup_picard; fasta_file_pileup }
+        .into { fasta_file; fasta_bwamem; fasta_file_pileup_picard; fasta_file_pileup; fasta_bwa_index }
+    //Channel
+         //.fromPath("${params.fasta}.*")
+         //.into { bwa_index_path }
 }
 
 // Create channel for picard stat targets
@@ -205,7 +209,22 @@ if( params.resourceDatasets ){
     Channel
         .fromPath(params.resourceDatasets)
         .ifEmpty { exit 1, "resource Datasets file not found: ${params.resourceDatasets}" }
-        .into { resourceDatasets_file }
+        .into { resourceDatasets_file_picard; resourceDatasets_file }
+}
+
+//Create multiQC config chanel
+if (params.multiqc_config) {
+    Channel
+        .fromPath(params.multiqc_config, checkIfExists: true)
+        .set { ch_config_for_multiqc }
+}
+
+// Create channel for reference index files
+if( params.indexFiles ){
+    Channel
+        .fromPath("${params.fasta}.*")
+		.into { bwa_index; bwa_index_pileup_picard; bwa_index_pileup }
+        //if( !bwa_index.exists() ) exit 1, "Index files not found: ${params.indexFiles}."
 }
 
 // Header log info
@@ -222,6 +241,7 @@ if(workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Current home']        = "$HOME"
 summary['Current user']        = "$USER"
 summary['Current path']        = "$PWD"
+summary['Index files']         = params.indexFiles
 summary['Working dir']         = workflow.workDir
 summary['Output dir']          = params.outdir
 summary['Script dir']          = workflow.projectDir
@@ -257,26 +277,27 @@ try {
               "============================================================"
 }
 
+if ( !params.indexFiles ){
 /*
  * Build BWA index
  */
-process makeBWAindex {
-    tag "${fasta.baseName}"
-    publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
-            saveAs: { params.saveReference ? it : null }, mode: 'copy'
+    process makeBWAindex {
+        tag "${fasta.baseName}"
+        publishDir path: { params.saveReference ? "${params.outdir}/../REFERENCES" : params.outdir },
+                saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
-    input:
-    file fasta from fasta_file
+        input:
+        file fasta from fasta_file
 
-    output:
-    file "${fasta}*" into bwa_index
+        output:
+        file "${fasta}*" into bwa_index, bwa_index_pileup_picard, bwa_index_pileup
 
-    script:
-    """
-    bwa index -a bwtsw $fasta
-    """
+        script:
+        """
+	   bwa index -a bwtsw $fasta 
+       """
+    }
 }
-
 
 /*
  * STEP 1.1 - FastQC
@@ -292,7 +313,7 @@ process fastqc {
     set val(name), file(reads) from raw_reads_fastqc
 
     output:
-    file '*_fastqc.{zip,html}' into fastqc_results
+    file '*_fastqc.{zip,html}' into fastqc_results, fastqc_results_picard
     file '.command.out' into fastqc_stdout
 
     script:
@@ -323,9 +344,9 @@ process trimming {
 
     output:
     file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa
-    file '*_unpaired_*.fastq.gz' into trimmed_unpaired_reads
-    file '*_fastqc.{zip,html}' into trimmomatic_fastqc_reports
-    file '*.log' into trimmomatic_results
+    file '*_unpaired_*.fastq.gz' into trimmed_unpaired_reads, trimmed_unpaired_reads_picard
+    file '*_fastqc.{zip,html}' into trimmomatic_fastqc_reports, trimmomatic_fastqc_reports_picard
+    file '*.log' into trimmomatic_results, trimmomatic_results_picard
 
     script:
     prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
@@ -347,19 +368,18 @@ process bwa {
 
     input:
     file reads from trimmed_paired_reads_bwa
-    file index from bwa_index
+    file fasta from fasta_bwamem
+    file bwa_index from bwa_index.collect()
 
     output:
     file '*.bam' into bwa_bam
 
     script:
-    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     """
-    bwa mem -M $index $reads > ${prefix}.sam
-    samtools view -bS ${prefix}.sam -o ${prefix}.bam
+    bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
     """
 }
-
 
 /*
  * STEP 2.2 - Samtools post-alignment processing
@@ -367,7 +387,7 @@ process bwa {
 
 process samtools {
     tag "${bam.baseName}"
-    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+    publishDir path: "${params.outdir}/03-bwa", mode: 'copy',
             saveAs: { filename ->
                     if (filename.indexOf("_stats.txt") > 0) "stats/$filename"
                     else params.saveAlignedIntermediates ? filename : null
@@ -377,9 +397,9 @@ process samtools {
     file bam from bwa_bam
 
     output:
-        file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls, bam_stats, picard_stats
-        file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_for_mapped
-        file '*_stats.txt' into samtools_stats
+    file '*_sorted.bam' into bam_for_mapped, bam_picard, bam_samtolls, bam_stats, picard_stats
+    file '*_sorted.bam.bai' into bwa_bai, bai_picard,bai_samtools, bai_bamstats, bai_picard_stats
+    file '*_stats.txt' into samtools_stats
 
     script:
     """
@@ -390,21 +410,21 @@ process samtools {
 }
 
 
+if (!params.keepduplicates){
 /*
  * STEP 2.3 - Picard
  */
-if (!params.keepduplicates){
     process picard {
         tag "$prefix"
         publishDir "${params.outdir}/04-picard", mode: 'copy'
             
-            
         input:
         file bam from bam_picard
+        file bai from bai_picard
 
         output:
         file '*_dedup_sorted.bam' into bam_dedup_mpileup, dedup_bam_stats, dedup_picard_stats
-        file '*_dedup_sorted.bam.bai' into bai_dedup_epic
+        file '*_dedup_sorted.bam.bai' into bai_dedup_stats, bai_dedup_picard_stats, bai_dedup_mpileup
         file '*_picardDupMetrics.txt' into picard_reports
 
         script:
@@ -432,10 +452,12 @@ if (!params.keepduplicates){
 
         input:
         file dedup_bam from bam_dedup_mpileup
+        file bai_file from bai_dedup_mpileup
         file fasta from fasta_file_pileup_picard
+		file bwa_index from bwa_index_pileup_picard.collect()
 
         output:
-        file '*.pileup' into pileup_results
+        file '*.pileup' into pileup_results_picard
 
         script:
         prefix = dedup_bam[0].toString() - ~/(_dedup)?(\.sorted)?(\.bam)?$/
@@ -445,215 +467,291 @@ if (!params.keepduplicates){
     }
     
 /*
+ * STEP 3.1 - VarScan picard
+ */
+
+    process varscan_picard {
+        tag "${pileup.baseName}"
+        publishDir "${params.outdir}/06-VarScan", mode: 'copy'
+
+        input:
+        file pileup from pileup_results_picard
+
+        output:
+        file '*.vcf' into vcf_file_picard
+
+        script:
+        """
+        varscan mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 > ${pileup.baseName}.vcf
+        """
+    }
+
+/*
+ * STEP 4.1 - KGGSeq picard
+ */
+
+    process kggseq_picard {
+        tag "${vcf.baseName}"
+        publishDir "${params.outdir}/07-Annotation", mode: 'copy'
+
+        input:
+        file vcf from vcf_file_picard
+        file resource from resourceDatasets_file_picard
+
+        output:
+        file '*.table' into bcftools_tables_picard
+        file '*_annot.txt.flt.txt' into kggseq_flt_file_picard
+        file '*_annot.txt.log' into kggseq_annot_log_picard
+        file '*_header.table' into header_table_picard
+
+        script:
+        """
+        bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
+        kggseq --no-lib-check --buildver hg38 --vcf-file $vcf --resource $resource --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
+        gunzip *_annot.txt.flt.txt.gz
+        cp ${baseDir}/assets/header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
+        """
+    }
+
+/*
+ * STEP 4.2 - R merge picard
+ */
+
+    process rmerge_picard {
+        tag "$prefix"
+        publishDir "${params.outdir}/07-Annotation/R_merge", mode: 'copy'
+
+        input:
+        file header_table from header_table_picard
+        file flt from kggseq_flt_file_picard
+
+        output:
+        file '*_all_annotated.tab' into r_merged_tables_picard
+
+        script:
+        prefix = header_table.baseName - ~/(_header)?(\.table)?$/
+        """
+        Rscript $baseDir/bin/merge_parse.R $prefix
+        """
+    }
+
+/*
+ * STEP 5.2 - Bamstats picard
+ */    
+     process bamstats_picard {
+        tag "$prefix"
+        publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
+
+        input:
+        file region_list from bamstatsTargets_file_picard
+        file sorted_bam from dedup_bam_stats
+        file bai_file from bai_dedup_stats
+
+
+        output:
+        file '*_bamstat.txt' into bamstats_result_picard
+
+        script:
+        prefix = sorted_bam[0].toString() - ~/(_paired)?(_sorted)?(\.bam)?$/
+
+        """
+        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic 2> ${prefix}_bamstat.txt
+        """
+    }
+
+/*
+ * STEP 5.2 - Picard CalculateHsMetrics picard
+ */
+ 
+     process picardmetrics_picard {
+        tag "$prefix"
+        publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
+
+        input:
+        file picard_targer from picardstatsTargets_file_picard
+        file sorted_bam from dedup_picard_stats
+        file bai_file from bai_dedup_picard_stats
+
+
+        output:
+        file '*_hsMetrics.out' into picardstats_result_picard
+        file 'hsMetrics_all.out' into picardstats_all_result_picard
+
+        script:
+        prefix = sorted_bam[0].toString() - ~/(_sorted)?(\.bam)(_paired)(_dedup)?$/
+        """
+        picard CalculateHsMetrics BI=$picard_targer TI=$picard_targer I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
+        echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
+        grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
+        """
+    }
+
+
+/*
+ * STEP 5.1 - MultiQC picard
+ */
+
+    process multiqc_picard {
+        tag "$prefix"
+        publishDir "${params.outdir}/08-stats/multiQC", mode: 'copy'
+
+        input:
+        file multiqc_config
+        file (fastqc:'fastqc/*') from fastqc_results_picard.collect()
+        file ('trimommatic/*') from trimmomatic_results_picard.collect()
+        file ('trimommatic/*') from trimmomatic_fastqc_reports_picard.collect()
+        file ('bamstats/*') from bamstats_result_picard.collect()
+        file ('picardstats/*') from picardstats_result_picard.collect()
+
+        output:
+        file '*multiqc_report.html' into multiqc_report_picard
+        file '*_data' into multiqc_data_picard
+        file '.command.err' into multiqc_stderr_picard
+        val prefix into multiqc_prefix_picard
+
+        script:
+        prefix = fastqc[0].toString() - '_fastqc.html' - 'fastqc/'
+
+        """
+        multiqc -d . --config $multiqc_config
+        """
+    }
+
+}
+
+
+if (params.keepduplicates){
+
+/*
  * STEP 2.4 - Samtools pileup keepduplicates
  */
 
-} else {
     process mpileup {
         tag "$prefix"
         publishDir "${params.outdir}/05-samtools_NC", mode: 'copy'
 
         input:
         file dup_bam from bam_samtolls
+        file bai_file from bai_samtools
         file fasta from fasta_file_pileup
+		file bwa_index from bwa_index_pileup.collect()
 
         output:
         file '*.pileup' into pileup_results
 
         script:
-        prefix = dup_bam[0].toString() - ~/(_dedup)?(\.sorted)?(\.bam)?$/
+        prefix = dup_bam[0].toString() - ~/(_dedup)?(\_sorted)?(\.bam)?$/
         """
         samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dup_bam > ${prefix}.pileup
         """
     }
 
-}
-
-
-
 /*
- * STEP 3.1 - VarScan
+ * STEP 3.1 - VarScan keepduplicates
  */
 
-process varscan {
-    tag "${pileup.baseName}"
-    publishDir "${params.outdir}/06-VarScan", mode: 'copy'
+    process varscan {
+        tag "${pileup.baseName}"
+        publishDir "${params.outdir}/06-VarScan", mode: 'copy'
 
-    input:
-    file pileup from pileup_results
+        input:
+        file pileup from pileup_results
 
-    output:
-    file '*.vcf' into vcf_file
+        output:
+        file '*.vcf' into vcf_file
 
-    script:
-    """
-    varscan mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 > ${pileup.baseName}.vcf
-    """
-}
+        script:
+        """
+        varscan mpileup2cns $pileup --min-var-freq ${params.minVarFreq} --p-value ${params.pValue} --variants --output-vcf 1 > ${pileup.baseName}.vcf
+        """
+    }
+
 
 /*
  * STEP 4.1 - KGGSeq
  */
 
-process kggseq {
-    tag "${vcf.baseName}"
-    publishDir "${params.outdir}/07-Annotation", mode: 'copy',
-            saveAs: { filename ->
-                    if (filename.indexOf(".table") > 0) "bcftools/$filename"
-                    else if (filename.indexOf("_annot.txt*") > 0) "kggseq/$filename"
-                    else if (filename.indexOf("_header.table") > 0) "header_table/$filename"
-            }
+    process kggseq {
+        tag "${vcf.baseName}"
+        publishDir "${params.outdir}/07-Annotation", mode: 'copy'
 
-    input:
-    file vcf from vcf_file
-    file resource from resourceDatasets_file
+        input:
+        file vcf from vcf_file
+        file resource from resourceDatasets_file
 
-    output:
-    file '*.table' into bcftools_tables
-    file '*_annot.txt.flt.txt' into kggseq_flt_file
-    file '*_annot.txt.log' into kggseq_annot_log
-    file '*_header.table' into header_table
+        output:
+        file '*.table' into bcftools_tables
+        file '*_annot.txt.flt.txt' into kggseq_flt_file
+        file '*_annot.txt.log' into kggseq_annot_log
+        file '*_header.table' into header_table
 
-    script:
-    """
-    bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
-    kggseq --no-lib-check --buildver hg38 --vcf-file $vcf --resource $resource --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
-    gunzip *_annot.txt.flt.txt.gz
-    cp header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
-    """
-}
+        script:
+        """
+        bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
+        kggseq --no-lib-check --buildver hg38 --vcf-file $vcf --resource $resource --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
+        gunzip *_annot.txt.flt.txt.gz
+        cp ${baseDir}/assets/header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
+        """
+    }
 
 /*
  * STEP 4.2 - R merge
  */
 
-process rmerge {
-    tag "$prefix"
-    publishDir "${params.outdir}/07-Annotation/R_merge", mode: 'copy'
+    process rmerge {
+        tag "$prefix"
+        publishDir "${params.outdir}/07-Annotation/R_merge", mode: 'copy'
 
-    input:
-    set val(name), file(header_table) from header_table
-    file flt from kggseq_flt_file
+        input:
+        file header_table from header_table
+        file flt from kggseq_flt_file
 
-    output:
-    file '*_all_annotated.tab' into r_merged_tables
+        output:
+        file '*_all_annotated.tab' into r_merged_tables
 
-    script:
-    prefix = name - ~/(_header)?(\.tabel)?$/
-    """
-    Rscript ${baseDir}/bin/merge_parse.R $prefix
-    """
-}
-
-/*
- * STEP 5.1 - MultiQC
- */
-
- process multiqc {
-    tag "$prefix"
-    publishDir "${params.outdir}/08-stats/multiQC", mode: 'copy'
-
-    input:
-    file multiqc_config
-    file (fastqc:'fastqc/*') from fastqc_results.collect()
-    file ('trimommatic/*') from trimmomatic_results.collect()
-    file ('trimommatic/*') from trimmomatic_fastqc_reports.collect()
-
-    output:
-    file '*multiqc_report.html' into multiqc_report
-    file '*_data' into multiqc_data
-    file '.command.err' into multiqc_stderr
-    val prefix into multiqc_prefix
-
-    script:
-    prefix = fastqc[0].toString() - '_fastqc.html' - 'fastqc/'
-
-    """
-    multiqc -d . --config $multiqc_config
-    """
-}
+        script:
+        prefix = header_table.baseName - ~/(_header)?(\.table)?$/
+        """
+        Rscript ${baseDir}/bin/merge_parse.R $prefix
+        """
+    }
 
 /*
  * STEP 5.2 - Bamstats
  */
-if (!params.keepduplicates){
-     process samstats_picard {
-        tag "$prefix"
-        publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
-
-        input:
-        file region_list from bamstatsTargets_file_picard
-        set val(name), file(sorted_bam) from dedup_bam_stats
-
-
-        output:
-        file '*_bamstat.txt' into bamstats_result
-
-        script:
-        prefix = name - ~/(_sorted)?(\.bam)?$/
-
-        """
-        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic
-        """
-    }
-} else {
      process samstats {
         tag "$prefix"
         publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
 
         input:
         file region_list from bamstatsTargets_file
-        set val(name), file(sorted_bam) from bam_stats
+        file sorted_bam from bam_stats
+        file bai_file from bai_bamstats
 
 
         output:
         file '*_bamstat.txt' into bamstats_result
 
         script:
-        prefix = name - ~/(_sorted)?(\.bam)?$/
+        prefix = sorted_bam[0].toString() - ~/(_paired)?(_sorted)?(\.bam)?$/
 
         """
-        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic
+        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic > ${prefix}_bamstat.txt
         """
     }
-
-}
 
 /*
  * STEP 5.2 - Picard CalculateHsMetrics
  */
-if (!params.keepduplicates){
-     process picardmetrics_picard {
-        tag "$prefix"
-        publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
-
-        input:
-        file bi_ti from picardstatsTargets_file_picard
-        set val(name), file(sorted_bam) from dedup_picard_stats
-
-
-        output:
-        file '*_hsMetrics.out' into picardstats_result
-        file 'hsMetrics_all.out' into picardstats_all_result
-
-        script:
-        prefix = name - ~/(_sorted)?(\.bam)?$/
-
-        """
-        picard CalculateHsMetrics BI=$bi_ti TI=$bi_ti I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
-        echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
-        grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
-        """
-    }
-
-} else {
+ 
      process picardmetrics {
         tag "$prefix"
         publishDir "${params.outdir}/08-stats/picardmetrics", mode: 'copy'
 
         input:
-        file bi_ti from picardstatsTargets_file
-        set val(name), file(sorted_bam) from picard_stats
+        file picard_targer from picardstatsTargets_file
+        file sorted_bam from picard_stats
+        file bai_file from bai_picard_stats
 
 
         output:
@@ -661,12 +759,46 @@ if (!params.keepduplicates){
         file 'hsMetrics_all.out' into picardstats_all_result
 
         script:
-        prefix = name - ~/(_sorted)?(\.bam)?$/
+        prefix = sorted_bam[0].toString() - ~/(_sorted)?(\.bam)(_paired)(_dedup)?$/
 
         """
-        picard CalculateHsMetrics BI=$bi_ti TI=$bi_ti I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
+        picard CalculateHsMetrics BI=$picard_targer TI=$picard_targer I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
         echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
         grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
         """
     }
+ 
+/*
+ * STEP 5.1 - MultiQC
+ */
+
+    process multiqc {
+        tag "$prefix"
+        publishDir "${params.outdir}/08-stats/multiQC", mode: 'copy'
+
+        input:
+        file multiqc_config
+        file (fastqc:'fastqc/*') from fastqc_results.collect()
+        file ('trimommatic/*') from trimmomatic_results.collect()
+        file ('trimommatic/*') from trimmomatic_fastqc_reports.collect()
+        file ('bamstats/*') from bamstats_result.collect()
+        file ('picardstats/*') from picardstats_result.collect()
+
+        output:
+        file '*multiqc_report.html' into multiqc_report
+        file '*_data' into multiqc_data
+        file '.command.err' into multiqc_stderr
+        val prefix into multiqc_prefix
+
+        script:
+        prefix = fastqc[0].toString() - '_fastqc.html' - 'fastqc/'
+
+        """
+        multiqc -d . --config $multiqc_config
+        """
+    }
+}
+
+workflow.onComplete {
+    log.info "BU-ISCIII - Pipeline complete"
 }
