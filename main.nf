@@ -513,7 +513,7 @@ if (!params.keepduplicates){
         bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
         kggseq --no-lib-check --buildver hg38 --vcf-file $vcf --resource $resource --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
         gunzip *_annot.txt.flt.txt.gz
-        cp header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
+        cp ${baseDir}/assets/header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
         """
     }
 
@@ -592,7 +592,7 @@ if (!params.keepduplicates){
  */
 /*
  * STEP 5.1 - MultiQC picard
- */
+
 
     process multiqc_picard {
         tag "$prefix"
@@ -619,7 +619,7 @@ if (!params.keepduplicates){
         multiqc -d . --config $multiqc_config
         """
     }
-
+ */
 
 }
 
