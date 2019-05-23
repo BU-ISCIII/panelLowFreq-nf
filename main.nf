@@ -736,7 +736,7 @@ if (params.keepduplicates){
         prefix = sorted_bam[0].toString() - ~/(_paired)?(_sorted)?(\.bam)?$/
 
         """
-        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic > ${prefix}_bamstat.txt
+        bam stats --regionList $region_list --in $sorted_bam --baseSum --basic 2> ${prefix}_bamstat.txt
         """
     }
 
