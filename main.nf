@@ -386,7 +386,7 @@ process bwa {
  */
 
 process samtools {
-    tag "${bam.baseName}"
+    tag "$prefix"
     publishDir path: "${params.outdir}/03-bwa", mode: 'copy',
             saveAs: { filename ->
                     if (filename.indexOf("_stats.txt") > 0) "stats/$filename"
@@ -402,10 +402,11 @@ process samtools {
     file '*_stats.txt' into samtools_stats
 
     script:
+	prefix = bam.baseName - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     """
-    samtools sort $bam -T ${bam.baseName}_sorted -o ${bam.baseName}_sorted.bam
-    samtools index ${bam.baseName}_sorted.bam
-    samtools stats ${bam.baseName}_sorted.bam > ${bam.baseName}_stats.txt
+    samtools sort $bam -T ${prefix}_sorted -o ${prefix}_sorted.bam
+    samtools index ${prefix}_sorted.bam
+    samtools stats ${prefix}_sorted.bam > ${prefix}_stats.txt
     """
 }
 
@@ -492,7 +493,13 @@ if (!params.keepduplicates){
 
     process kggseq_picard {
         tag "${vcf.baseName}"
-        publishDir "${params.outdir}/07-Annotation", mode: 'copy'
+        publishDir "${params.outdir}/07-Annotation", mode: 'copy',
+		        saveAs: { filename ->
+                        if (filename.indexOf("_paired.table") > 0) "annotation/$filename"
+						else if (filename.indexOf(".log") > 0) "logs/$filename"
+						else if (filename.indexOf(".txt") > 0) "annotation/$filename"
+						else if (filename.indexOf("_header.table") > 0) "tables/$filename"
+                }
 
         input:
         file vcf from vcf_file_picard
@@ -519,8 +526,8 @@ if (!params.keepduplicates){
 
     process rmerge_picard {
         tag "$prefix"
-        publishDir "${params.outdir}/07-Annotation/R_merge", mode: 'copy'
-
+        publishDir "${params.outdir}/07-Annotation/tables", mode: 'copy'
+		
         input:
         file header_table from header_table_picard
         file flt from kggseq_flt_file_picard
@@ -640,7 +647,7 @@ if (params.keepduplicates){
         file '*.pileup' into pileup_results
 
         script:
-        prefix = dup_bam[0].toString() - ~/(_dedup)?(\_sorted)?(\.bam)?$/
+        prefix = dup_bam.baseName  - ~/(_dedup)?(\_sorted)?(\.bam)?$/
         """
         samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $dup_bam > ${prefix}.pileup
         """
@@ -673,8 +680,13 @@ if (params.keepduplicates){
 
     process kggseq {
         tag "${vcf.baseName}"
-        publishDir "${params.outdir}/07-Annotation", mode: 'copy'
-
+        publishDir "${params.outdir}/07-Annotation", mode: 'copy',
+		        saveAs: { filename ->
+                        if (filename.indexOf("_paired.table") > 0) "annotation/$filename"
+						else if (filename.indexOf(".log") > 0) "logs/$filename"
+						else if (filename.indexOf(".txt") > 0) "annotation/$filename"
+						else if (filename.indexOf("_header.table") > 0) "tables/$filename"
+                }
         input:
         file vcf from vcf_file
         file resource from resourceDatasets_file
@@ -700,7 +712,7 @@ if (params.keepduplicates){
 
     process rmerge {
         tag "$prefix"
-        publishDir "${params.outdir}/07-Annotation/R_merge", mode: 'copy'
+        publishDir "${params.outdir}/07-Annotation/tables", mode: 'copy'
 
         input:
         file header_table from header_table
@@ -719,7 +731,7 @@ if (params.keepduplicates){
 /*
  * STEP 5.2 - Bamstats
  */
-     process samstats {
+     process bamstats {
         tag "$prefix"
         publishDir "${params.outdir}/08-stats/bamstats", mode: 'copy'
 
@@ -733,7 +745,7 @@ if (params.keepduplicates){
         file '*_bamstat.txt' into bamstats_result
 
         script:
-        prefix = sorted_bam[0].toString() - ~/(_paired)?(_sorted)?(\.bam)?$/
+        prefix = sorted_bam.baseName - ~/(_paired)?(_sorted)?(\.bam)?$/
 
         """
         bam stats --regionList $region_list --in $sorted_bam --baseSum --basic 2> ${prefix}_bamstat.txt
@@ -759,7 +771,7 @@ if (params.keepduplicates){
         file 'hsMetrics_all.out' into picardstats_all_result
 
         script:
-        prefix = sorted_bam[0].toString() - ~/(_sorted)?(\.bam)(_paired)(_dedup)?$/
+        prefix = sorted_bam.baseName - ~/(\.bam)?(_sorted)?$/
 
         """
         picard CalculateHsMetrics BI=$picard_targer TI=$picard_targer I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
