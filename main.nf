@@ -46,6 +46,7 @@ def helpMessage() {
       --reads                       Path to input data (must be surrounded with quotes).
       --fasta                       Path to human Fasta reference
     References
+	  --indexFiles                  If reference index files exist.
       --saveReference               Save reference file and indexes.
     Options:
       --singleEnd                   Specifies that the input is single end reads
