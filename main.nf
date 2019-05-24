@@ -105,7 +105,7 @@ if( params.fasta ){
 params.singleEnd = false
 
 //Mapping-duplicates defaults
-params.keepduplicates = false
+params.keepduplicates = true
 params.indexFiles = false
 
 // Trimming default
@@ -176,7 +176,7 @@ if ( ! params.resourceDatasets ){
 Channel
     .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nIf this is single-end data, please specify --singleEnd on the command line." }
-    .into { raw_reads_fastqc; raw_reads_trimming }
+    .into { raw_reads_fastqc; raw_reads_trimming; raw_reads_bwa }
 
 // Create channel for fasta reference if supplied
 if( params.fasta ){
@@ -322,37 +322,39 @@ process fastqc {
     """
 }
 
-
+if ( !params.notrim ){
 /*
  * STEP 1.2 - Trimming
  */
 
-process trimming {
-    tag "$prefix"
-    publishDir "${params.outdir}/02-trimming", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
-            else if (filename.indexOf(".log") > 0) "logs/$filename"
-   else if (filename.indexOf(".fastq.gz") > 0) "trimmed/$filename"
-            else params.saveTrimmed ? filename : null
+    process trimming {
+        tag "$prefix"
+        publishDir "${params.outdir}/02-trimming", mode: 'copy',
+            saveAs: {filename ->
+                if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
+                else if (filename.indexOf(".log") > 0) "logs/$filename"
+       else if (filename.indexOf(".fastq.gz") > 0) "trimmed/$filename"
+                else params.saveTrimmed ? filename : null
+        }
+
+        input:
+        set val(name), file(reads) from raw_reads_trimming
+
+        output:
+        file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa
+        file '*_unpaired_*.fastq.gz' into trimmed_unpaired_reads, trimmed_unpaired_reads_picard
+        file '*_fastqc.{zip,html}' into trimmomatic_fastqc_reports, trimmomatic_fastqc_reports_picard
+        file '*.log' into trimmomatic_results, trimmomatic_results_picard
+
+        script:
+        prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
+        """
+        trimmomatic PE -phred33 $reads -threads 1 $prefix"_paired_R1.fastq" $prefix"_unpaired_R1.fastq" $prefix"_paired_R2.fastq" $prefix"_unpaired_R2.fastq" ILLUMINACLIP:${params.trimmomatic_adapters_file}:${params.trimmomatic_adapters_parameters} SLIDINGWINDOW:${params.trimmomatic_window_length}:${params.trimmomatic_window_value} MINLEN:${params.trimmomatic_mininum_length} 2> ${name}.log
+        gzip *.fastq
+        fastqc -q *_paired_*.fastq.gz
+        """
     }
-
-    input:
-    set val(name), file(reads) from raw_reads_trimming
-
-    output:
-    file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa
-    file '*_unpaired_*.fastq.gz' into trimmed_unpaired_reads, trimmed_unpaired_reads_picard
-    file '*_fastqc.{zip,html}' into trimmomatic_fastqc_reports, trimmomatic_fastqc_reports_picard
-    file '*.log' into trimmomatic_results, trimmomatic_results_picard
-
-    script:
-    prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
-    """
-    trimmomatic PE -phred33 $reads -threads 1 $prefix"_paired_R1.fastq" $prefix"_unpaired_R1.fastq" $prefix"_paired_R2.fastq" $prefix"_unpaired_R2.fastq" ILLUMINACLIP:${params.trimmomatic_adapters_file}:${params.trimmomatic_adapters_parameters} SLIDINGWINDOW:${params.trimmomatic_window_length}:${params.trimmomatic_window_value} MINLEN:${params.trimmomatic_mininum_length} 2> ${name}.log
-    gzip *.fastq
-    fastqc -q *_paired_*.fastq.gz
-    """
+	raw_reads_bwa = trimmed_paired_reads_bwa
 }
 
 /*
@@ -365,7 +367,7 @@ process bwa {
             saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
 
     input:
-    file reads from trimmed_paired_reads_bwa
+    file reads from raw_reads_bwa
     file fasta from fasta_bwamem
     file bwa_index from bwa_index.collect()
 
@@ -444,11 +446,11 @@ if (!params.keepduplicates){
     
     //Change variables to dedup variables
     bam_samtools = bam_dedup_mpileup
-	bai_samtools = bai_dedup_mpileup
-	bam_stats = dedup_bam_stats
-	bai_bamstats = bai_dedup_stats
-	picard_stats = dedup_picard_stats
-	bai_picard_stats = bai_dedup_picard_stats
+    bai_samtools = bai_dedup_mpileup
+    bam_stats = dedup_bam_stats
+    bai_bamstats = bai_dedup_stats
+    picard_stats = dedup_picard_stats
+    bai_picard_stats = bai_dedup_picard_stats
 }
 
 
