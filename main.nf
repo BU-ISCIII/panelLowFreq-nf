@@ -608,6 +608,11 @@ process picardmetrics {
 /*
  * STEP 5.1 - MultiQC
  */
+ 
+if ( params.notrim ){
+    trimmomatic_results = Channel.empty()
+    trimmomatic_fastqc_reports = Channel.empty()
+}
 
 process multiqc {
     tag "$prefix"
@@ -616,10 +621,8 @@ process multiqc {
     input:
     file multiqc_config
     file (fastqc:'fastqc/*') from fastqc_results.collect()
-	if ( !params.notrim ){
-        file ('trimommatic/*') from trimmomatic_results.collect()
-        file ('trimommatic/*') from trimmomatic_fastqc_reports.collect()
-	}
+	file ('trimommatic/*') from trimmomatic_results.collect()
+    file ('trimommatic/*') from trimmomatic_fastqc_reports.collect()
     file ('bamstats/*') from bamstats_result.collect()
     file ('picardstats/*') from picardstats_result.collect()
 
