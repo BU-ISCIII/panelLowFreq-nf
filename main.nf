@@ -616,8 +616,10 @@ process multiqc {
     input:
     file multiqc_config
     file (fastqc:'fastqc/*') from fastqc_results.collect()
-    file ('trimommatic/*') from trimmomatic_results.collect()
-    file ('trimommatic/*') from trimmomatic_fastqc_reports.collect()
+	if ( !params.notrim ){
+        file ('trimommatic/*') from trimmomatic_results.collect()
+        file ('trimommatic/*') from trimmomatic_fastqc_reports.collect()
+	}
     file ('bamstats/*') from bamstats_result.collect()
     file ('picardstats/*') from picardstats_result.collect()
 
