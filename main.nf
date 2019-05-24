@@ -105,7 +105,7 @@ if( params.fasta ){
 params.singleEnd = false
 
 //Mapping-duplicates defaults
-params.keepduplicates = true
+params.keepduplicates = false
 params.indexFiles = false
 
 // Trimming default
