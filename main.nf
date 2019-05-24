@@ -354,7 +354,7 @@ if ( !params.notrim ){
         fastqc -q *_paired_*.fastq.gz
         """
     }
-	raw_reads_bwa = trimmed_paired_reads_bwa
+    raw_reads_bwa = trimmed_paired_reads_bwa
 }
 
 /*
