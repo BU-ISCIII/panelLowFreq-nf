@@ -387,7 +387,7 @@ process bwa {
 
 process samtools {
     tag "$prefix"
-    publishDir path: "${params.outdir}/03-bwa", mode: 'copy',
+    publishDir path: "${params.outdir}/03-mapping", mode: 'copy',
             saveAs: { filename ->
                     if (filename.indexOf("_stats.txt") > 0) "stats/$filename"
                     else params.saveAlignedIntermediates ? filename : null
@@ -417,7 +417,7 @@ if (!params.keepduplicates){
  */
     process picard {
         tag "$prefix"
-        publishDir "${params.outdir}/03-bwa/picard", mode: 'copy'
+        publishDir "${params.outdir}/04-picard", mode: 'copy'
             
         input:
         file bam from bam_picard
