@@ -130,8 +130,8 @@ Besides functional annotation some variant filtering is performed:
 ## Statistics summary
 ### Bamutil
 [Bamutil](https://genome.sph.umich.edu/wiki/BamUtil) bam stats command is used for generating specified statistics on a BAM file. We use --basic parameter for basic statistic generation and --baseSum to print an overall summary of the baseQC. 
-**Output directory:** ANALYSIS/{ANALYSIS_ID}/99-stats
 
+**Output directory:** ANALYSIS/{ANALYSIS_ID}/99-stats
 * `{sample_id}_bamstat.txt`: tab separated file with an overall summary of the baseQC.
 
 ### MultiQC
