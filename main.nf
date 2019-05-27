@@ -399,8 +399,8 @@ process samtools {
     file bam from bwa_bam
 
     output:
-    file '*_sorted.bam' into bam_picard, bam_samtools, bam_stats, picard_stats
-    file '*_sorted.bam.bai' into bai_picard, bai_samtools, bai_bamstats, bai_picard_stats
+    file '*_sorted.bam' into bam_picard, bam_samtools, bam_stats, picard_stats, bedtools_coverage
+    file '*_sorted.bam.bai' into bai_picard, bai_samtools, bai_bamstats, bai_picard_stats, bai_bedtools_coverage
     file '*_stats.txt' into samtools_stats
 
     script:
@@ -426,8 +426,8 @@ if (params.removeDuplicates){
         file bai from bai_picard
 
         output:
-        file '*_dedup_sorted.bam' into bam_dedup_mpileup, dedup_bam_stats, dedup_picard_stats
-        file '*_dedup_sorted.bam.bai' into bai_dedup_stats, bai_dedup_picard_stats, bai_dedup_mpileup
+        file '*_dedup_sorted.bam' into bam_dedup_mpileup, dedup_bam_stats, dedup_picard_stats, dedup_bedtools_coverage
+        file '*_dedup_sorted.bam.bai' into bai_dedup_stats, bai_dedup_picard_stats, bai_dedup_mpileup, bai_dedup_bedtools_coverage
         file '*_picardDupMetrics.txt' into picard_reports
 
         script:
@@ -451,6 +451,8 @@ if (params.removeDuplicates){
     bai_samtools = bai_dedup_mpileup
     bam_stats = dedup_bam_stats
     bai_bamstats = bai_dedup_stats
+    bedtools_coverage = dedup_bedtools_coverage
+    bai_bedtools_coverage = bai_dedup_bedtools_coverage
     picard_stats = dedup_picard_stats
     bai_picard_stats = bai_dedup_picard_stats
 }
@@ -607,7 +609,35 @@ process picardmetrics {
     grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
     """
 }
+
+
+/*
+ * STEP 5.3 - Bedtools coverage
+
  
+process bedtools {
+    tag "$prefix"
+    publishDir "${params.outdir}/99-stats/bedtools", mode: 'copy'
+
+    input:
+    file sorted_bam from bedtools_coverage
+    file bai_file from bai_bedtools_coverage
+
+
+    output:
+    file '*_hsMetrics.out' into picardstats_result
+    file 'hsMetrics_all.out' into picardstats_all_result
+
+    script:
+    prefix = sorted_bam.baseName - ~/(\.bam)?(_sorted)?$/
+
+    """
+    bedtools coverage -abam sorted_bam -b ./rb1_exons.bed
+    """
+}
+ */
+
+
 /*
  * STEP 5.1 - MultiQC
  */
