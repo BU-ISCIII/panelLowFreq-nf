@@ -331,7 +331,7 @@ if ( !params.notrim ){
 
     process trimming {
         tag "$prefix"
-        publishDir "${params.outdir}/02-trimming", mode: 'copy',
+        publishDir "${params.outdir}/02-preprocessing", mode: 'copy',
             saveAs: {filename ->
                 if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
                 else if (filename.indexOf(".log") > 0) "logs/$filename"
@@ -343,7 +343,7 @@ if ( !params.notrim ){
         set val(name), file(reads) from raw_reads_trimming
 
         output:
-        file '*_paired_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa
+        file '*_filtered_*.fastq.gz' into trimmed_paired_reads,trimmed_paired_reads_bwa
         file '*_unpaired_*.fastq.gz' into trimmed_unpaired_reads, trimmed_unpaired_reads_picard
         file '*_fastqc.{zip,html}' into trimmomatic_fastqc_reports, trimmomatic_fastqc_reports_picard
         file '*.log' into trimmomatic_results, trimmomatic_results_picard
@@ -351,7 +351,7 @@ if ( !params.notrim ){
         script:
         prefix = name - ~/(_S[0-9]{2})?(_L00[1-9])?(.R1)?(_1)?(_R1)?(_trimmed)?(_val_1)?(_00*)?(\.fq)?(\.fastq)?(\.gz)?$/
         """
-        trimmomatic PE -phred33 $reads -threads 1 $prefix"_paired_R1.fastq" $prefix"_unpaired_R1.fastq" $prefix"_paired_R2.fastq" $prefix"_unpaired_R2.fastq" ILLUMINACLIP:${params.trimmomatic_adapters_file}:${params.trimmomatic_adapters_parameters} SLIDINGWINDOW:${params.trimmomatic_window_length}:${params.trimmomatic_window_value} MINLEN:${params.trimmomatic_mininum_length} 2> ${name}.log
+        trimmomatic PE -phred33 $reads -threads 1 $prefix"_filtered_R1.fastq" $prefix"_unpaired_R1.fastq" $prefix"_filtered_R2.fastq" $prefix"_unpaired_R2.fastq" ILLUMINACLIP:${params.trimmomatic_adapters_file}:${params.trimmomatic_adapters_parameters} SLIDINGWINDOW:${params.trimmomatic_window_length}:${params.trimmomatic_window_value} MINLEN:${params.trimmomatic_mininum_length} 2> ${name}.log
         gzip *.fastq
         fastqc -q *_paired_*.fastq.gz
         """
@@ -377,7 +377,7 @@ process bwa {
     file '*.bam' into bwa_bam
 
     script:
-    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = reads[0].toString() - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_filtered)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     """
     bwa mem -M $fasta $reads | samtools view -bT $fasta - > ${prefix}.bam
     """
@@ -404,7 +404,7 @@ process samtools {
     file '*_stats.txt' into samtools_stats
 
     script:
-    prefix = bam.baseName - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_paired)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+    prefix = bam.baseName - ~/(.R1)?(_1)?(_R1)?(_trimmed)?(_filtered)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
     """
     samtools sort $bam -T ${prefix}_sorted -o ${prefix}_sorted.bam
     samtools index ${prefix}_sorted.bam
@@ -510,7 +510,7 @@ process varscan {
 
 process kggseq {
     tag "${vcf.baseName}"
-    publishDir "${params.outdir}/07-Annotation", mode: 'copy',
+    publishDir "${params.outdir}/07-annotation", mode: 'copy',
             saveAs: { filename ->
                 if (filename.indexOf("_paired.table") > 0) "annotation/$filename"
                 else if (filename.indexOf(".log") > 0) "logs/$filename"
@@ -542,7 +542,7 @@ process kggseq {
 
 process rmerge {
     tag "$prefix"
-    publishDir "${params.outdir}/07-Annotation/tables", mode: 'copy'
+    publishDir "${params.outdir}/07-annotation/tables", mode: 'copy'
 
     input:
     file header_table from header_table
@@ -609,33 +609,6 @@ process picardmetrics {
     grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
     """
 }
-
-
-/*
- * STEP 5.3 - Bedtools coverage
-
- 
-process bedtools {
-    tag "$prefix"
-    publishDir "${params.outdir}/99-stats/bedtools", mode: 'copy'
-
-    input:
-    file sorted_bam from bedtools_coverage
-    file bai_file from bai_bedtools_coverage
-
-
-    output:
-    file '*_hsMetrics.out' into picardstats_result
-    file 'hsMetrics_all.out' into picardstats_all_result
-
-    script:
-    prefix = sorted_bam.baseName - ~/(\.bam)?(_sorted)?$/
-
-    """
-    bedtools coverage -abam sorted_bam -b ./rb1_exons.bed
-    """
-}
- */
 
 
 /*
