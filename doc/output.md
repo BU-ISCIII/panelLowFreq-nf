@@ -26,8 +26,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 Quality control is performed using [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). FastQC gives general quality metrics about your reads. It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C). You get information about adapter contamination and other overrepresented sequences.
 For further reading and documentation see the [FastQC help](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/).
 
-**Results directory**: ANALYSIS/{ANALYSIS_ID}/01-fastqc
-- There is one folder per sample.
+**Results directory**: ANALYSIS/01-fastqc
 - Files:
    - `{sample_id}/{sample_id}_R[12]_fastqc.html`: html report. This file can be opened in your favourite web browser (Firefox/chrome preferable) and it contains the different graphs that fastqc calculates for QC.
    - `{sample_id}/{sample_id}_R[12]_fastqc` : folder with fastqc output in plain text.
@@ -37,18 +36,17 @@ For further reading and documentation see the [FastQC help](http://www.bioinform
 [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) is used for removal of adapter contamination and trimming of low quality regions.
 Parameters included for trimming are:
 -  Nucleotides with phred quality < 10 in 3'end.
--  Mean phred quality < 15 in a 4 nucleotide window.
--  Read lenght < 70
+-  Mean phred quality < 20 in a 4 nucleotide window.
+-  Read lenght < 50
 
 MultiQC reports the percentage of bases removed by trimming in bar plot showing percentage or reads trimmed in forward and reverse.
 
 **Note**:The FastQC plots displayed in the MultiQC report shows _untrimmed_ reads. They may contain adapter sequence and potentially regions with low quality. To see how your reads look after trimming, look at the FastQC reports in the ANALYSIS/{ANALYSIS_ID}/03-preprocQC directory.
 
-**Results directory**: ANALYSIS/{ANALYSIS_ID}/02-preprocessing
-- There is one folder per sample.
+**Results directory**: ANALYSIS/02-preprocessing
 - Files:
-   - `{sample_id}/{sample_id}_R[12]_filtered.fastq.gz`: contains high quality reads with both forward and reverse tags surviving.
-   - `{sample_id}/{sample_id}_R[12]_unpaired.fastq.gz`: contains high quality reads with only forward or reverse tags surviving.
+   - `{sample_id}_R[12]_filtered.fastq.gz`: contains high quality reads with both forward and reverse tags surviving.
+   - `{sample_id}_R[12]_unpaired.fastq.gz`: contains high quality reads with only forward or reverse tags surviving.
 
 **NOTE:** This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.
 
@@ -57,42 +55,22 @@ MultiQC reports the percentage of bases removed by trimming in bar plot showing 
 ### BWA
 [BWA](http://bio-bwa.sourceforge.net/), or Burrows-Wheeler Aligner, is designed for mapping low-divergent sequence reads against reference genomes. The result alignment files are further processed with [SAMtools](http://samtools.sourceforge.net/), sam format is converted to bam, sorted and an index *.bai* is generated.
 
-**Results directory**: ANALYSIS/{ANALYSIS_ID}/04-mapping.
-- There is one folder per sample.
-- This files can be used in [IGV](https://software.broadinstitute.org/software/igv/) for alignment visualization.
+**Results directory**: ANALYSIS/03-mapping.
+- These files can be used in [IGV](https://software.broadinstitute.org/software/igv/) for alignment visualization.
 - Files:
-   - `{sample_id}/{sample_id}_sorted.bam` : sorted aligned bam file.
-   - `{sample_id}/{sample_id}_sorted.bam.bai`: index file for soreted aligned bam.
-
-### Picard
-Metrics for the analysis of target-capture sequencing experiments are calculated with [Picard CollectHsMetrics](https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics). The metrics in this class fall broadly into three categories:
-
-- Basic sequencing metrics that are either generated as a baseline against which to evaluate other metrics or because they are used in the calculation of other metrics. This includes things like the genome size, the number of reads, the number of aligned reads etc.
-- Metrics that are intended for evaluating the performance of the wet-lab assay that generated the data. This group includes metrics like the number of bases mapping on/off/near baits, %selected, fold 80 base penalty, hs library size and the hs penalty metrics. These metrics are calculated prior to some of the filters are applied (e.g. low mapping quality reads, low base quality bases and bases overlapping in the middle of paired-end reads are all counted).
-- Metrics for assessing target coverage as a proxy for how well the data is likely to perform in downstream applications like variant calling. This group includes metrics like mean target coverage, the percentage of bases reaching various coverage levels, and the percentage of bases excluded by various filters. These metrics are computed using the strictest subset of the data, after all filters have been applied.
-
-**Results directory:** ANALYSIS/{ANALYSIS_ID}/99-stats/bamstats
-- Files:
-   - `hsMetrics_all.out` : summary of the some of the most meaningful columns in picard hsmetrics output for all the samples in the project.
-   - `{sample_id}_hsMetrics.out`: full picard hsmetrics output per sample.
-   - Description of Picard hsMetrics columns in its output can be found in [AnnexIII](#annex-iii)
-
-### Bedtools
-[Bedtools](http://bedtools.readthedocs.io/en/latest/) is used for calculating exons with less than 20x of depth of coverage, with bedtools coverage utility.
-**Results directory:** ANALYSIS/{ANALYSIS_ID/99-stats/bedtools}
-- Files:
-   - `{sample_id}.cov.csv`: coverage information for each feature in enrichment (bed) file.
-   - `{sample_id}.cov.csv_exons_below20.txt`: exons with mean depth of coverage below 20x.
-   - `exons_not_covered_stats.csv`: summary with information of percentage of exons above and below 20x depth of coverage.
+   - `{sample_id}_sorted.bam` : sorted aligned bam file.
+   - `{sample_id}_sorted.bam.bai`: index file for soreted aligned bam.
 
 ## Variant Calling
 ### Samtools
-Samtools mpileup command is used for generate a pileup for one the BAM files. In the pileup format each line represents a genomic position, consisting of chromosome name, 1-based coordinate, reference base, the number of reads covering the site, read bases, base qualities and alignment mapping qualities. Information on match, mismatch, indel, strand, mapping quality and start and end of a read are all encoded at the read base column. This information is used by [VarScan](#varscan) for doing the proper variant calling step.
+Samtools mpileup command is used for generate a pileup for one the BAM files. In the pileup format each line represents a genomic position, consisting of chromosome name, 1-based coordinate, reference base, the number of reads covering the site, read bases, base qualities and alignment mapping qualities. Information on match, mismatch, indel, strand, mapping quality and start and end of a read are all encoded at the read base column. This information is used by [VarScan](#varscan) for doing the proper variant calling step. Samtools command mpileup is used with the following parameters:
+- -A: Do not skip anomalous read pairs in variant calling.
+- -d 20000: At a position, read maximally 20000 reads per input BAM.
+- -Q 0 : 0 minimum base quality for a base to be considered.
 
-**Results directory**: ANALYSIS/{ANALYSIS_ID}/06-samtools
-- There is a folder per sample.
+**Results directory**: ANALYSIS/05-samtools
 - Files:
-   - `{sample_id}/{sample_id}.pileup`: pileup format file.
+   - `{sample_id}.pileup`: pileup format file.
 
 **NOTE:** This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.
 
@@ -101,10 +79,9 @@ Samtools mpileup command is used for generate a pileup for one the BAM files. In
 - --min-var-freq 0.05: output variants with minimum 0.05 alternate allele frequency (this paramter allow the detection of low frequency variants)
 - --p-value 0.99 : p-value filter is removed for posterior manual filtering.
 
-**Results directory:**: ANALYSIS/{ANALYSIS_ID}/07-VarScan
-- There is one folder per sample.
+**Results directory:**: ANALYSIS/06-VarScan
 - File:
-   - `{sample_id}/{sample_id}.vcf` : file with variants detected by VarScan in vcf format.
+   - `{sample_id}.vcf` : file with variants detected by VarScan in vcf format.
 - Description of VarScan columns in its output can be found in [AnnexI](#annex-i)
 
 ## Post-Analysis: annotation and filtering
@@ -118,12 +95,12 @@ Besides functional annotation some variant filtering is performed:
 - Sequencing quality < 50.0
 - Population frequency in ANY database (ESP5400,dbsnp141,1kg201305,exac) > 0.005
 
-**Results directory**: ANALYSIS/{ANALYSS}09-annotation/
+**Results directory**: ANALYSIS/07-annotation/
 - Files:
-   - `{sample_id}/{sample_id}_all_annotated.tab` : final file for researcher examination. it includes all VarScan information and all annotation information by KGGSeq.
-   - `{sample_id}/{sample_id}_annot.txt.flt.txt` : tab column file with KGGSeq annotation.
-   - `{sample_id}/{sample_id}_annot.txt.log`: kggseq log.
-   - `{sample_id}/{sample_id}_header.table`: intermediate file for header cleaning.
+   - `{sample_id}_all_annotated.tab` : final file for researcher examination. it includes all VarScan information and all annotation information by KGGSeq.
+   - `{sample_id}_annot.txt.flt.txt` : tab column file with KGGSeq annotation.
+   - `{sample_id}_annot.txt.log`: kggseq log.
+   - `{sample_id}_header.table`: intermediate file for header cleaning.
 
 - Description of kggseq columns in its output can be found in [Annex II](#annex-ii)
 
@@ -131,13 +108,26 @@ Besides functional annotation some variant filtering is performed:
 ### Bamutil
 [Bamutil](https://genome.sph.umich.edu/wiki/BamUtil) bam stats command is used for generating specified statistics on a BAM file. We use --basic parameter for basic statistic generation and --baseSum to print an overall summary of the baseQC. 
 
-**Output directory:** ANALYSIS/{ANALYSIS_ID}/99-stats
+**Results directory:** ANALYSIS/99-stats/bamstats
 * `{sample_id}_bamstat.txt`: tab separated file with an overall summary of the baseQC.
+
+### Picard
+Metrics for the analysis of target-capture sequencing experiments are calculated with [Picard CollectHsMetrics](https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics). The metrics in this class fall broadly into three categories:
+
+- Basic sequencing metrics that are either generated as a baseline against which to evaluate other metrics or because they are used in the calculation of other metrics. This includes things like the genome size, the number of reads, the number of aligned reads etc.
+- Metrics that are intended for evaluating the performance of the wet-lab assay that generated the data. This group includes metrics like the number of bases mapping on/off/near baits, %selected, fold 80 base penalty, hs library size and the hs penalty metrics. These metrics are calculated prior to some of the filters are applied (e.g. low mapping quality reads, low base quality bases and bases overlapping in the middle of paired-end reads are all counted).
+- Metrics for assessing target coverage as a proxy for how well the data is likely to perform in downstream applications like variant calling. This group includes metrics like mean target coverage, the percentage of bases reaching various coverage levels, and the percentage of bases excluded by various filters. These metrics are computed using the strictest subset of the data, after all filters have been applied.
+
+**Results directory:** ANALYSIS/99-stats/picardmetrics
+- Files:
+   - `hsMetrics_all.out` : summary of the some of the most meaningful columns in picard hsmetrics output for all the samples in the project.
+   - `{sample_id}_hsMetrics.out`: full picard hsmetrics output per sample.
+   - Description of Picard hsMetrics columns in its output can be found in [AnnexIII](#annex-iii)
 
 ### MultiQC
 [MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
 
-**Output directory:** ANALYSIS/{ANALYSIS_ID}/99-stats
+**Results directory:** ANALYSIS/99-stats/multiQC
 
 * `multiqc_report.html`: MultiQC report - a standalone HTML file that can be viewed in your web browser
 * `multiqc_data/`: Directory containing parsed statistics from the different tools used in the pipeline
