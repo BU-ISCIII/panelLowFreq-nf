@@ -111,7 +111,7 @@ Besides functional annotation some variant filtering is performed:
 **Results directory:** ANALYSIS/99-stats/bamstats
 * `{sample_id}_bamstat.txt`: tab separated file with an overall summary of the baseQC.
 
-- Description of bamstats columns in its output can be found in [Annex IV](#annex-iv)
+- Description of bamstats columns in its output can be found in [AnnexIII](#annex-iii)
 
 ### Picard
 Metrics for the analysis of target-capture sequencing experiments are calculated with [Picard CollectHsMetrics](https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics). The metrics in this class fall broadly into three categories:
@@ -124,7 +124,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 - Files:
    - `hsMetrics_all.out` : summary of the some of the most meaningful columns in picard hsmetrics output for all the samples in the project.
    - `{sample_id}_hsMetrics.out`: full picard hsmetrics output per sample.
-   - Description of Picard hsMetrics columns in its output can be found in [AnnexIII](#annex-iii)
+   - Description of Picard hsMetrics columns in its output can be found in [Annex IV](#annex-iv)
 
 ### MultiQC
 [MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
@@ -227,6 +227,29 @@ For more information about how to use MultiQC reports, see http://multiqc.info
 
 <div class="tables-start"></div>
 
+|Column|Meaning|
+| --- | --- |
+|TotalReads|# of reads that are in the file|
+|Dups|# of reads marked duplicate in the flag|
+|QCFail|# of reads marked QC failure in the flag|
+|Mapped| # of reads marked mapped in the flag|
+|Paired|# of reads marked paired in the flag|
+|ProperPaired|# of reads marked paired AND proper paired in the flag|
+|ZeroMapQual|# of reads that have a Mapping Quality of 0 / TotalReads|
+|MapQual<10|# of reads that have a Mapping Quality < 10 / TotalReads|
+|MapQual255|# of reads that have a Mapping Quality = 255|
+|PassMapQual|# of reads that have a Mapping Quality >= a minimum Mapping Quality|
+|AverageMapQuality|sum of included mapping qualities / AverageMapQualCount|
+|AverageMapQualCount|# of mapping qualities in AverageMapQuality|
+|Depth|# of reads that are mapped with acceptable Mapping Quality, and are not duplicates or QC failures|
+|Q20Bases|# of bases at this position with a base quality (from the read) of Q20 or higher|
+
+<div class="tables-end"></div>
+
+## Annex IV
+
+<div class="tables-start"></div>
+
 |BAIT_SET|The name of the bait set used in the hybrid selection.|
 | --- | --- |
 |GENOME_SIZE|The number of bases in the reference genome used for alignment.|
@@ -282,29 +305,6 @@ For more information about how to use MultiQC reports, see http://multiqc.info
 |GC_DROPOUT|A measure of how undercovered >= 50% GC regions are relative to the mean. For each GC bin [50..100] we calculate a = % of target territory, and b = % of aligned reads aligned to these targets. GC DROPOUT is then abs(sum(a-b when a-b < 0)). E.g. if the value is 5% this implies that 5% of total reads that should have mapped to GC>=50% regions mapped elsewhere.|
 |HET_SNP_SENSITIVITY|The theoretical HET SNP sensitivity.|
 |HET_SNP_Q|The Phred Scaled Q Score of the theoretical HET SNP sensitivity.|
-
-<div class="tables-end"></div>
-
-## Annex IV
-
-<div class="tables-start"></div>
-
-|Column|Meaning|
-| --- | --- |
-|TotalReads|# of reads that are in the file|
-|Dups|# of reads marked duplicate in the flag|
-|QCFail|# of reads marked QC failure in the flag|
-|Mapped| # of reads marked mapped in the flag|
-|Paired|# of reads marked paired in the flag|
-|ProperPaired|# of reads marked paired AND proper paired in the flag|
-|ZeroMapQual|# of reads that have a Mapping Quality of 0 / TotalReads|
-|MapQual<10|# of reads that have a Mapping Quality < 10 / TotalReads|
-|MapQual255|# of reads that have a Mapping Quality = 255|
-|PassMapQual|# of reads that have a Mapping Quality >= a minimum Mapping Quality|
-|AverageMapQuality|sum of included mapping qualities / AverageMapQualCount|
-|AverageMapQualCount|# of mapping qualities in AverageMapQuality|
-|Depth|# of reads that are mapped with acceptable Mapping Quality, and are not duplicates or QC failures|
-|Q20Bases|# of bases at this position with a base quality (from the read) of Q20 or higher|
 
 <div class="tables-end"></div>
 
