@@ -111,7 +111,7 @@ Besides functional annotation some variant filtering is performed:
 **Results directory:** ANALYSIS/99-stats/bamstats
 * `{sample_id}_bamstat.txt`: tab separated file with an overall summary of the baseQC.
 
-- Description of bamstats columns in its output can be found in [AnnexIII](#annex-iii)
+- Description of bamstats columns in its output can be found in [Annex III](#annex-iii)
 
 ### Picard
 Metrics for the analysis of target-capture sequencing experiments are calculated with [Picard CollectHsMetrics](https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics). The metrics in this class fall broadly into three categories:
