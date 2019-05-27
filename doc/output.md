@@ -8,14 +8,16 @@ This document describes the output produced by the pipeline and location of outp
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
 
-* [FastQC](#fastqc) v0.11.3 - read quality control
-* [Trimmomatic](#trimming) v.0.33 - adapter and low quality trimming
-* [BWA](#bwa) v.0.7.12 - mapping against reference genome
-* [SAMtools](#samtools) v1.2 - alignment result processing and variant calling.
-* [Picard](#picard) v.1.140 - enrichment and alignment metrics
+* [FastQC](#fastqc) v0.11.7 - read quality control.
+* [Trimmomatic](#trimming) v.0.38 - adapter and low quality trimming.
+* [BWA](#bwa) v.0.7.17 - mapping against reference genome.
+* [SAMtools](#samtools) v1.9 - alignment result processing and variant calling.
+* [Picard](#picard) v.1.140 - enrichment and alignment metrics.
 * [VarScan](#varscan) v2.3.9 - variant calling.
-* [KGGSeq](#kggseq) v.0.8 - variant annotation.
-* [MultiQC](#multiqc) v1.5 - quality statistics summary
+* [KGGSeq](#kggseq) v.1.1 - variant annotation.
+* [Bamutil](#bamutil) v.1.0.13 - bam stats for statistics on a BAM file. 
+* [Bedtools](#bedtools) v.2.27 - calculating coverage %. 
+* [MultiQC](#multiqc) v1.8dev - quality statistics summary.
 
 > Each analysis folder contains a log folder with the log files for each process and each sample.
 
@@ -125,7 +127,14 @@ Besides functional annotation some variant filtering is performed:
 
 - Description of kggseq columns in its output can be found in [Annex II](#annex-ii)
 
-# MultiQC
+## Statistics summary
+### Bamutil
+[Bamutil](https://genome.sph.umich.edu/wiki/BamUtil) bam stats command is used for generating specified statistics on a BAM file. We use --basic parameter for basic statistic generation and --baseSum to print an overall summary of the baseQC. 
+**Output directory:** ANALYSIS/{ANALYSIS_ID}/99-stats
+
+* `{sample_id}_bamstat.txt`: tab separated file with an overall summary of the baseQC.
+
+### MultiQC
 [MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
 
 **Output directory:** ANALYSIS/{ANALYSIS_ID}/99-stats
