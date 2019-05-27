@@ -60,7 +60,8 @@ def helpMessage() {
       --trimmomatic_mininum_length  Minimum length of reads
     Mapping options
       --saveAlignedIntermediates    Save intermediate bam files.
-      --keepduplicates                Keep duplicate reads. Picard MarkDuplicates step skipped.
+      --removeDuplicates            Remove duplicate reads. Picard MarkDuplicates step skipped.
+      --saveMpileup                 Save mpileup output file.
     Veriant calling
       --maxDepth                    Maximum number of reads per input file to read at a position. Default 20000
       --minBaseQ                    Minimum base quality for a base to be considered. Default 0.
@@ -105,7 +106,7 @@ if( params.fasta ){
 params.singleEnd = false
 
 //Mapping-duplicates defaults
-params.keepduplicates = true
+params.removeDuplicates = false
 params.indexFiles = false
 
 // Trimming default
@@ -141,6 +142,7 @@ if (params.multiqc_config){
 params.saveReference = false
 params.saveTrimmed = false
 params.saveAlignedIntermediates = false
+params.saveMpileup = false
 
 // Stats options
 params.bamstatsTargets = false
@@ -233,7 +235,7 @@ def summary = [:]
 summary['Reads']               = params.reads
 summary['Data Type']           = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Fasta Ref']            = params.fasta
-summary['Keep Duplicates'] = params.keepduplicates
+summary['Remove Duplicates'] = params.removeDuplicates
 summary['Container']           = workflow.container
 if(workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Current home']        = "$HOME"
@@ -281,7 +283,7 @@ if ( !params.indexFiles ){
  */
     process makeBWAindex {
         tag "${fasta.baseName}"
-        publishDir path: { params.saveReference ? "${params.outdir}/../REFERENCES" : params.outdir },
+        publishDir path: { params.saveReference ? "${params.outdir}/REFERENCES" : params.outdir },
                 saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
         input:
@@ -333,8 +335,8 @@ if ( !params.notrim ){
             saveAs: {filename ->
                 if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
                 else if (filename.indexOf(".log") > 0) "logs/$filename"
-       else if (filename.indexOf(".fastq.gz") > 0) "trimmed/$filename"
-                else params.saveTrimmed ? filename : null
+                else if (filename.indexOf(".fastq.gz") > 0) "trimmed/$filename"
+                    else params.saveTrimmed ? filename : null
         }
 
         input:
@@ -363,7 +365,7 @@ if ( !params.notrim ){
 
 process bwa {
     tag "$prefix"
-    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-bwa" : params.outdir }, mode: 'copy',
+    publishDir path: { params.saveAlignedIntermediates ? "${params.outdir}/03-mapping" : params.outdir }, mode: 'copy',
             saveAs: {filename -> params.saveAlignedIntermediates ? filename : null }
 
     input:
@@ -411,7 +413,7 @@ process samtools {
 }
 
 
-if (!params.keepduplicates){
+if (params.removeDuplicates){
 /*
  * STEP 2.3 - Picard
  */
@@ -455,12 +457,13 @@ if (!params.keepduplicates){
 
 
 /*
- * STEP 2.4 - Samtools pileup keepduplicates
+ * STEP 2.4 - Samtools pileup
  */
 
 process mpileup {
     tag "$prefix"
-    publishDir "${params.outdir}/04-samtools_NC", mode: 'copy'
+    publishDir "${params.outdir}/05-samtools", mode: 'copy',
+            saveAs: {filename -> params.saveMpileup ? filename : null }
 
     input:
     file bam from bam_samtools
@@ -471,20 +474,20 @@ process mpileup {
     output:
     file '*.pileup' into pileup_results
 
-   script:
-   prefix = bam.baseName  - ~/(_dedup)?(\_sorted)?(\.bam)?$/
-   """
-   samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $bam > ${prefix}.pileup
-   """
+    script:
+    prefix = bam.baseName  - ~/(_dedup)?(\_sorted)?(\.bam)?$/
+    """
+    samtools mpileup -A -d ${params.maxDepth} -Q ${params.minBaseQ} -f $fasta $bam > ${prefix}.pileup
+    """
 }
 
 /*
- * STEP 3.1 - VarScan keepduplicates
+ * STEP 3.1 - VarScan
  */
 
 process varscan {
     tag "${pileup.baseName}"
-    publishDir "${params.outdir}/05-VarScan", mode: 'copy'
+    publishDir "${params.outdir}/06-VarScan", mode: 'copy'
 
     input:
     file pileup from pileup_results
@@ -537,7 +540,7 @@ process kggseq {
 
 process rmerge {
     tag "$prefix"
-    publishDir "${params.outdir}/06-Annotation/tables", mode: 'copy'
+    publishDir "${params.outdir}/07-Annotation/tables", mode: 'copy'
 
     input:
     file header_table from header_table
@@ -621,7 +624,7 @@ process multiqc {
     input:
     file multiqc_config
     file (fastqc:'fastqc/*') from fastqc_results.collect()
-	file ('trimommatic/*') from trimmomatic_results.collect()
+    file ('trimommatic/*') from trimmomatic_results.collect()
     file ('trimommatic/*') from trimmomatic_fastqc_reports.collect()
     file ('bamstats/*') from bamstats_result.collect()
     file ('picardstats/*') from picardstats_result.collect()
