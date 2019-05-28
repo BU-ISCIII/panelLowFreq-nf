@@ -353,7 +353,7 @@ if ( !params.notrim ){
         """
         trimmomatic PE -phred33 $reads -threads 1 $prefix"_filtered_R1.fastq" $prefix"_unpaired_R1.fastq" $prefix"_filtered_R2.fastq" $prefix"_unpaired_R2.fastq" ILLUMINACLIP:${params.trimmomatic_adapters_file}:${params.trimmomatic_adapters_parameters} SLIDINGWINDOW:${params.trimmomatic_window_length}:${params.trimmomatic_window_value} MINLEN:${params.trimmomatic_mininum_length} 2> ${name}.log
         gzip *.fastq
-        fastqc -q *_paired_*.fastq.gz
+        fastqc -q *_filtered_*.fastq.gz
         """
     }
     raw_reads_bwa = trimmed_paired_reads_bwa
