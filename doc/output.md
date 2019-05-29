@@ -14,6 +14,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 * [SAMtools](#samtools) v1.9 - alignment result processing and variant calling.
 * [Picard](#picard) v.1.140 - enrichment and alignment metrics.
 * [VarScan](#varscan) v2.3.9 - variant calling.
+* [Bcftools](#bcftools) v1.9 - extract fields from vcf file.
 * [KGGSeq](#kggseq) v.1.1 - variant annotation.
 * [Bedtools](#bedtools) v.2.27 - calculating coverage %. 
 * [Bamutil](#bamutil) v.1.0.13 - bam stats for statistics on a BAM file. 
@@ -82,9 +83,17 @@ Samtools mpileup command is used for generate a pileup for one the BAM files. In
 **Results directory:**: ANALYSIS/06-VarScan
 - File:
    - `{sample_id}.vcf` : file with variants detected by VarScan in vcf format.
-- Description of VarScan columns in its output can be found in [AnnexI](#annex-i)
+- Description of VarScan columns in its output can be found in [Annex I](#annex-i)
 
 ## Post-Analysis: annotation and filtering
+### Bcftools
+[Bcftools](http://www.htslib.org/doc/bcftools.html) query command is used to extract fields from previously created VCF files to a tab separated file. The extracted fields columns can are explained in [Annex II](#annex-ii)
+
+**Results directory:**: ANALYSIS/07-annotation/annotation
+- File:
+   - `{sample_id}.table` : tab separated file with VCF file extracted fields.
+
+
 ### KGGSeq
 [KGGSeq](http://grass.cgs.hku.hk/limx/kggseq/) is used for variant annotation, a tool design for variant priorization in the study of mendelian diseases.
 
@@ -95,14 +104,14 @@ Besides functional annotation some variant filtering is performed:
 - Sequencing quality < 50.0
 - Population frequency in ANY database (ESP5400,dbsnp141,1kg201305,exac) > 0.005
 
-**Results directory**: ANALYSIS/07-annotation/
+**Results directory**: ANALYSIS/07-annotation
 - Files:
    - `{sample_id}_all_annotated.tab` : final file for researcher examination. it includes all VarScan information and all annotation information by KGGSeq.
    - `{sample_id}_annot.txt.flt.txt` : tab column file with KGGSeq annotation.
    - `{sample_id}_annot.txt.log`: kggseq log.
    - `{sample_id}_header.table`: intermediate file for header cleaning.
 
-- Description of kggseq columns in its output can be found in [Annex II](#annex-ii)
+- Description of kggseq columns in its output can be found in [Annex III](#annex-iii)
 
 ## Statistics summary
 ### Bamutil
@@ -111,7 +120,7 @@ Besides functional annotation some variant filtering is performed:
 **Results directory:** ANALYSIS/99-stats/bamstats
 * `{sample_id}_bamstat.txt`: tab separated file with an overall summary of the baseQC.
 
-- Description of bamstats columns in its output can be found in [Annex III](#annex-iii)
+- Description of bamstats columns in its output can be found in [Annex VI](#annex-vi)
 
 ### Picard
 Metrics for the analysis of target-capture sequencing experiments are calculated with [Picard CollectHsMetrics](https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics). The metrics in this class fall broadly into three categories:
@@ -124,7 +133,7 @@ Metrics for the analysis of target-capture sequencing experiments are calculated
 - Files:
    - `hsMetrics_all.out` : summary of the some of the most meaningful columns in picard hsmetrics output for all the samples in the project.
    - `{sample_id}_hsMetrics.out`: full picard hsmetrics output per sample.
-   - Description of Picard hsMetrics columns in its output can be found in [Annex IV](#annex-iv)
+   - Description of Picard hsMetrics columns in its output can be found in [Annex V](#annex-v)
 
 ### MultiQC
 [MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
@@ -167,6 +176,33 @@ For more information about how to use MultiQC reports, see http://multiqc.info
 <div class="tables-end"></div>
 
 ## Annex II
+
+<div class="tables-start"></div>
+
+|Column|Name|
+| --- | --- |
+|CHROM|chromosome name|
+|POS|position|
+|REF|reference allele at this position|
+|ALT|the first alternate allele|
+|FILTER|wether this position has passed all filters|
+|GT|genotype, encoded as alleles values. 0 for the reference allele, 1 for the first allele listed in ALT, 2 for the second allele list in ALT and so on|
+|DP|read depth at this position for this sample|
+|RD|total reference depth|
+|AD|total allelic depth|
+|FREQ|frequence of alternate allele compared to reference (AD*100/(AD+RD))|
+|PVAL|p-alue|
+|RBQ|Reference base quality at this position|
+|ABQ|Alternate allele base quality at this position|
+|RDF|total reference depths on the forward strand|
+|RDR|total reference depths on the reverse strand|
+|ADF|total alternate allele depths on the forward strand|
+|ADR|total alternate allele depths on the reverse strand|
+
+<div class="tables-end"></div>
+
+
+## Annex III
 
 <div class="tables-start"></div>
 
@@ -223,7 +259,7 @@ For more information about how to use MultiQC reports, see http://multiqc.info
 
 <div class="tables-end"></div>
 
-## Annex III
+## Annex IV
 
 <div class="tables-start"></div>
 
@@ -246,7 +282,7 @@ For more information about how to use MultiQC reports, see http://multiqc.info
 
 <div class="tables-end"></div>
 
-## Annex IV
+## Annex V
 
 <div class="tables-start"></div>
 
