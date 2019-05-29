@@ -512,10 +512,10 @@ process kggseq {
     tag "${vcf.baseName}"
     publishDir "${params.outdir}/07-annotation", mode: 'copy',
             saveAs: { filename ->
-                if (filename.indexOf("_paired.table") > 0) "annotation/$filename"
+                if (filename.indexOf("_header.table") > 0) "tables/$filename"
                 else if (filename.indexOf(".log") > 0) "logs/$filename"
                 else if (filename.indexOf(".txt") > 0) "annotation/$filename"
-                else if (filename.indexOf("_header.table") > 0) "tables/$filename"
+                else if (filename.indexOf(".table") > 0) "annotation/$filename"
             }
     input:
     file vcf from vcf_file
