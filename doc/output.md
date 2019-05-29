@@ -105,10 +105,10 @@ Besides functional annotation some variant filtering is performed:
 
 **Results directory**: ANALYSIS/07-annotation
 - Files:
-   - `{sample_id}_all_annotated.tab` : final file for researcher examination. it includes all VarScan information and all annotation information by KGGSeq.
-   - `{sample_id}_annot.txt.flt.txt` : tab column file with KGGSeq annotation.
-   - `{sample_id}_annot.txt.log`: kggseq log.
-   - `{sample_id}_header.table`: intermediate file for header cleaning.
+   - `tables/{sample_id}_all_annotated.tab` : final file for researcher examination. it includes all VarScan information and all annotation information by KGGSeq.
+   - `annotation/{sample_id}_annot.txt.flt.txt` : tab column file with KGGSeq annotation.
+   - `logs/{sample_id}_annot.txt.log`: kggseq log.
+   - `tables/{sample_id}_header.table`: intermediate file for header cleaning.
 
 - Description of kggseq columns in its output can be found in [Annex III](#annex-iii)
 
