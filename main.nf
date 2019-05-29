@@ -335,8 +335,8 @@ if ( !params.notrim ){
             saveAs: {filename ->
                 if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
                 else if (filename.indexOf(".log") > 0) "logs/$filename"
-                else if (filename.indexOf(".fastq.gz") > 0) "trimmed/$filename"
-                    else params.saveTrimmed ? filename : null
+                else if (params.saveTrimmed && filename.indexOf(".fastq.gz")) "trimmed/$filename"
+				else null
         }
 
         input:
