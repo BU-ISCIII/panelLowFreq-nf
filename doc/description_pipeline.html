@@ -221,11 +221,13 @@ img { max-width: 800px; }
 <li>
 <a href="#toc_6">BWA</a>
 </li>
-<li>
-<a href="#toc_7">Picard</a>
+</ul>
 </li>
 <li>
-<a href="#toc_8">Bedtools</a>
+<a href="#toc_7">Deduplication (optional)</a>
+<ul>
+<li>
+<a href="#toc_8">Picard</a>
 </li>
 </ul>
 </li>
@@ -244,26 +246,44 @@ img { max-width: 800px; }
 <a href="#toc_12">Post-Analysis: annotation and filtering</a>
 <ul>
 <li>
-<a href="#toc_13">KGGSeq</a>
+<a href="#toc_13">Bcftools</a>
 </li>
-</ul>
+<li>
+<a href="#toc_14">KGGSeq</a>
 </li>
 </ul>
 </li>
 <li>
-<a href="#toc_14">MultiQC</a>
+<a href="#toc_15">Statistics summary</a>
 <ul>
 <li>
-<a href="#toc_15">Annex I</a>
+<a href="#toc_16">Bamutil</a>
 </li>
 <li>
-<a href="#toc_16">Annex II</a>
+<a href="#toc_17">Picard metrics</a>
 </li>
 <li>
-<a href="#toc_17">Annex III</a>
+<a href="#toc_18">MultiQC</a>
+</li>
+</ul>
 </li>
 <li>
-<a href="#toc_18">Bibliography</a>
+<a href="#toc_19">Annex I</a>
+</li>
+<li>
+<a href="#toc_20">Annex II</a>
+</li>
+<li>
+<a href="#toc_21">Annex III</a>
+</li>
+<li>
+<a href="#toc_22">Annex IV</a>
+</li>
+<li>
+<a href="#toc_23">Annex V</a>
+</li>
+<li>
+<a href="#toc_24">Bibliography</a>
 </li>
 </ul>
 </li>
@@ -282,14 +302,16 @@ img { max-width: 800px; }
 <p>The pipeline is built using <a href="https://www.nextflow.io/">Nextflow</a> and processes data using the following steps:</p>
 
 <ul>
-<li><a href="#fastqc">FastQC</a> v0.11.3 - read quality control</li>
-<li><a href="#trimming">Trimmomatic</a> v.0.33 - adapter and low quality trimming</li>
-<li><a href="#bwa">BWA</a> v.0.7.12 - mapping against reference genome</li>
-<li><a href="#samtools">SAMtools</a> v1.2 - alignment result processing and variant calling.</li>
-<li><a href="#picard">Picard</a> v.1.140 - enrichment and alignment metrics</li>
+<li><a href="#fastqc">FastQC</a> v0.11.7 - read quality control.</li>
+<li><a href="#trimming">Trimmomatic</a> v.0.38 - adapter and low quality trimming.</li>
+<li><a href="#bwa">BWA</a> v.0.7.17 - mapping against reference genome.</li>
+<li><a href="#samtools">SAMtools</a> v1.9 - alignment result processing and variant calling.</li>
+<li><a href="#picard">Picard</a> v.1.140 - Deduplication and enrichment and alignment metrics.</li>
 <li><a href="#varscan">VarScan</a> v2.3.9 - variant calling.</li>
-<li><a href="#kggseq">KGGSeq</a> v.0.8 - variant annotation.</li>
-<li><a href="#multiqc">MultiQC</a> v1.5 - quality statistics summary</li>
+<li><a href="#bcftools">Bcftools</a> v1.9 - extract fields from vcf file.</li>
+<li><a href="#kggseq">KGGSeq</a> v.1.1 - variant annotation.</li>
+<li><a href="#bamutil">Bamutil</a> v.1.0.13 - bam stats for statistics on a BAM file. </li>
+<li><a href="#multiqc">MultiQC</a> v1.8dev - quality statistics summary.</li>
 </ul>
 
 <blockquote>
@@ -303,16 +325,14 @@ img { max-width: 800px; }
 <p>Quality control is performed using <a href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FastQC</a>. FastQC gives general quality metrics about your reads. It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C). You get information about adapter contamination and other overrepresented sequences.
 For further reading and documentation see the <a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/">FastQC help</a>.</p>
 
-<p><strong>Results directory</strong>: ANALYSIS/{ANALYSIS_ID}/01-fastqc</p>
+<p><strong>Results directory</strong>: ANALYSIS/01-fastqc</p>
 
 <ul>
-<li>There is one folder per sample.</li>
 <li>Files:
 
 <ul>
-<li><code>{sample_id}/{sample_id}_R[12]_fastqc.html</code>: html report. This file can be opened in your favourite web browser (Firefox/chrome preferable) and it contains the different graphs that fastqc calculates for QC.</li>
-<li><code>{sample_id}/{sample_id}_R[12]_fastqc</code> : folder with fastqc output in plain text.</li>
-<li><code>{sample_id}/{sample_id}_R[12]_fastqc.zip</code>: zip compression of above folder.</li>
+<li><code>{sample_id}_R[12]_fastqc.html</code>: html report. This file can be opened in your favourite web browser (Firefox/chrome preferable) and it contains the different graphs that fastqc calculates for QC.</li>
+<li><code>zips/{sample_id}_R[12]_fastqc.zip</code>: zip compression of above file.</li>
 </ul></li>
 </ul>
 
@@ -323,27 +343,29 @@ Parameters included for trimming are:</p>
 
 <ul>
 <li> Nucleotides with phred quality &lt; 10 in 3&#39;end.</li>
-<li> Mean phred quality &lt; 15 in a 4 nucleotide window.</li>
-<li> Read lenght &lt; 70</li>
+<li> Mean phred quality &lt; 20 in a 4 nucleotide window.</li>
+<li> Read lenght &lt; 50</li>
 </ul>
 
 <p>MultiQC reports the percentage of bases removed by trimming in bar plot showing percentage or reads trimmed in forward and reverse.</p>
 
 <p><strong>Note</strong>:The FastQC plots displayed in the MultiQC report shows <em>untrimmed</em> reads. They may contain adapter sequence and potentially regions with low quality. To see how your reads look after trimming, look at the FastQC reports in the ANALYSIS/{ANALYSIS_ID}/03-preprocQC directory.</p>
 
-<p><strong>Results directory</strong>: ANALYSIS/{ANALYSIS_ID}/02-preprocessing</p>
+<p><strong>Results directory</strong>: ANALYSIS/02-preprocessing</p>
 
 <ul>
-<li>There is one folder per sample.</li>
 <li>Files:
 
 <ul>
-<li><code>{sample_id}/{sample_id}_R[12]_filtered.fastq.gz</code>: contains high quality reads with both forward and reverse tags surviving.</li>
-<li><code>{sample_id}/{sample_id}_R[12]_unpaired.fastq.gz</code>: contains high quality reads with only forward or reverse tags surviving.</li>
+<li><code>trimmed/{sample_id}_filtered_R[12].fastq.gz</code>: contains high quality reads with both forward and reverse tags surviving.</li>
+<li><code>trimmed/{sample_id}_unpaired_R[12].fastq.gz</code>: contains high quality reads with only forward or reverse tags surviving.</li>
+<li><code>FastQC/{sample_id}_filtered_R[12].fastqc.html</code>: html report of the trimmed reads.</li>
+<li><code>FastQC/{sample_id}_filtered_R[12].fastqc.html.zip</code>: zip compression of above file.</li>
+<li><code>logs/{sample_id}.log</code>: log file of the trimming process.</li>
 </ul></li>
 </ul>
 
-<p><strong>NOTE:</strong> This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.</p>
+<p><strong>NOTE:</strong> Trimmed reads are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.</p>
 
 <h2 id="toc_5">Mapping</h2>
 
@@ -351,53 +373,34 @@ Parameters included for trimming are:</p>
 
 <p><a href="http://bio-bwa.sourceforge.net/">BWA</a>, or Burrows-Wheeler Aligner, is designed for mapping low-divergent sequence reads against reference genomes. The result alignment files are further processed with <a href="http://samtools.sourceforge.net/">SAMtools</a>, sam format is converted to bam, sorted and an index <em>.bai</em> is generated.</p>
 
-<p><strong>Results directory</strong>: ANALYSIS/{ANALYSIS_ID}/04-mapping.</p>
+<p><strong>Results directory</strong>: ANALYSIS/03-mapping.</p>
 
 <ul>
-<li>There is one folder per sample.</li>
-<li>This files can be used in <a href="https://software.broadinstitute.org/software/igv/">IGV</a> for alignment visualization.</li>
+<li>These files can be used in <a href="https://software.broadinstitute.org/software/igv/">IGV</a> for alignment visualization.</li>
 <li>Files:
 
 <ul>
-<li><code>{sample_id}/{sample_id}_sorted.bam</code> : sorted aligned bam file.</li>
-<li><code>{sample_id}/{sample_id}_sorted.bam.bai</code>: index file for soreted aligned bam.</li>
+<li><code>{sample_id}_filtered.bam</code> : aligned bam file.</li>
+<li><code>{sample_id}_sorted.bam</code> : sorted aligned bam file.</li>
+<li><code>{sample_id}_sorted.bam.bai</code>: index file for soreted aligned bam.</li>
 </ul></li>
 </ul>
 
-<h3 id="toc_7">Picard</h3>
+<h2 id="toc_7">Deduplication (optional)</h2>
 
-<p>Metrics for the analysis of target-capture sequencing experiments are calculated with <a href="https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics">Picard CollectHsMetrics</a>. The metrics in this class fall broadly into three categories:</p>
+<h3 id="toc_8">Picard</h3>
 
-<ul>
-<li>Basic sequencing metrics that are either generated as a baseline against which to evaluate other metrics or because they are used in the calculation of other metrics. This includes things like the genome size, the number of reads, the number of aligned reads etc.</li>
-<li>Metrics that are intended for evaluating the performance of the wet-lab assay that generated the data. This group includes metrics like the number of bases mapping on/off/near baits, %selected, fold 80 base penalty, hs library size and the hs penalty metrics. These metrics are calculated prior to some of the filters are applied (e.g. low mapping quality reads, low base quality bases and bases overlapping in the middle of paired-end reads are all counted).</li>
-<li>Metrics for assessing target coverage as a proxy for how well the data is likely to perform in downstream applications like variant calling. This group includes metrics like mean target coverage, the percentage of bases reaching various coverage levels, and the percentage of bases excluded by various filters. These metrics are computed using the strictest subset of the data, after all filters have been applied.</li>
-</ul>
+<p><a href="https://broadinstitute.github.io/picard/">Picard</a> is a set of command line tools for manipulating high-throughput sequencing (HTS) data and formats such as SAM/BAM/CRAM and VCF. It is used to remove duplicated sequences. This step is optional.</p>
 
-<p><strong>Results directory:</strong> ANALYSIS/{ANALYSIS_ID}/99-stats/bamstats</p>
+<p><strong>Results directory</strong>: ANALYSIS/04-picard.</p>
 
 <ul>
 <li>Files:
 
 <ul>
-<li><code>hsMetrics_all.out</code> : summary of the some of the most meaningful columns in picard hsmetrics output for all the samples in the project.</li>
-<li><code>{sample_id}_hsMetrics.out</code>: full picard hsmetrics output per sample.</li>
-<li>Description of Picard hsMetrics columns in its output can be found in <a href="#annex-iii">AnnexIII</a></li>
-</ul></li>
-</ul>
-
-<h3 id="toc_8">Bedtools</h3>
-
-<p><a href="http://bedtools.readthedocs.io/en/latest/">Bedtools</a> is used for calculating exons with less than 20x of depth of coverage, with bedtools coverage utility.
-<strong>Results directory:</strong> ANALYSIS/{ANALYSIS_ID/99-stats/bedtools}</p>
-
-<ul>
-<li>Files:
-
-<ul>
-<li><code>{sample_id}.cov.csv</code>: coverage information for each feature in enrichment (bed) file.</li>
-<li><code>{sample_id}.cov.csv_exons_below20.txt</code>: exons with mean depth of coverage below 20x.</li>
-<li><code>exons_not_covered_stats.csv</code>: summary with information of percentage of exons above and below 20x depth of coverage.</li>
+<li><code>{sample_id}_dedup_sorted.bam</code> : deduplicated bam file.</li>
+<li><code>{sample_id}_dedup_sorted.bam.bai</code>: index file for deduplicated aligned bam.</li>
+<li><code>{sample_id}_picardDupMetrics.txt</code>: txt file with the deduplication metrics.</li>
 </ul></li>
 </ul>
 
@@ -405,16 +408,21 @@ Parameters included for trimming are:</p>
 
 <h3 id="toc_10">Samtools</h3>
 
-<p>Samtools mpileup command is used for generate a pileup for one the BAM files. In the pileup format each line represents a genomic position, consisting of chromosome name, 1-based coordinate, reference base, the number of reads covering the site, read bases, base qualities and alignment mapping qualities. Information on match, mismatch, indel, strand, mapping quality and start and end of a read are all encoded at the read base column. This information is used by <a href="#varscan">VarScan</a> for doing the proper variant calling step.</p>
-
-<p><strong>Results directory</strong>: ANALYSIS/{ANALYSIS_ID}/06-samtools</p>
+<p>Samtools mpileup command is used for generate a pileup for one the BAM files. In the pileup format each line represents a genomic position, consisting of chromosome name, 1-based coordinate, reference base, the number of reads covering the site, read bases, base qualities and alignment mapping qualities. Information on match, mismatch, indel, strand, mapping quality and start and end of a read are all encoded at the read base column. This information is used by <a href="#varscan">VarScan</a> for doing the proper variant calling step. Samtools command mpileup is used with the following parameters:</p>
 
 <ul>
-<li>There is a folder per sample.</li>
+<li>-A: Do not skip anomalous read pairs in variant calling.</li>
+<li>-d 20000: At a position, read maximally 20000 reads per input BAM.</li>
+<li>-Q 0 : 0 minimum base quality for a base to be considered.</li>
+</ul>
+
+<p><strong>Results directory</strong>: ANALYSIS/05-samtools</p>
+
+<ul>
 <li>Files:
 
 <ul>
-<li><code>{sample_id}/{sample_id}.pileup</code>: pileup format file.</li>
+<li><code>{sample_id}.pileup</code>: pileup format file.</li>
 </ul></li>
 </ul>
 
@@ -429,21 +437,34 @@ Parameters included for trimming are:</p>
 <li>--p-value 0.99 : p-value filter is removed for posterior manual filtering.</li>
 </ul>
 
-<p><strong>Results directory:</strong>: ANALYSIS/{ANALYSIS_ID}/07-VarScan</p>
+<p><strong>Results directory:</strong>: ANALYSIS/06-VarScan</p>
 
 <ul>
-<li>There is one folder per sample.</li>
 <li>File:
 
 <ul>
-<li><code>{sample_id}/{sample_id}.vcf</code> : file with variants detected by VarScan in vcf format.</li>
+<li><code>{sample_id}.vcf</code> : file with variants detected by VarScan in vcf format.</li>
 </ul></li>
-<li>Description of VarScan columns in its output can be found in <a href="#annex-i">AnnexI</a></li>
+<li>Description of VarScan columns in its output can be found in <a href="#annex-i">Annex I</a></li>
 </ul>
 
 <h2 id="toc_12">Post-Analysis: annotation and filtering</h2>
 
-<h3 id="toc_13">KGGSeq</h3>
+<h3 id="toc_13">Bcftools</h3>
+
+<p><a href="http://www.htslib.org/doc/bcftools.html">Bcftools</a> query command is used to extract fields from previously created VCF files to a tab separated file. The extracted fields columns can are explained in <a href="#annex-ii">Annex II</a></p>
+
+<p><strong>Results directory:</strong>: ANALYSIS/07-annotation/annotation</p>
+
+<ul>
+<li>File:
+
+<ul>
+<li><code>{sample_id}.table</code> : tab separated file with VCF file extracted fields.</li>
+</ul></li>
+</ul>
+
+<h3 id="toc_14">KGGSeq</h3>
 
 <p><a href="http://grass.cgs.hku.hk/limx/kggseq/">KGGSeq</a> is used for variant annotation, a tool design for variant priorization in the study of mendelian diseases.</p>
 
@@ -457,25 +478,60 @@ Parameters included for trimming are:</p>
 <li>Population frequency in ANY database (ESP5400,dbsnp141,1kg201305,exac) &gt; 0.005</li>
 </ul>
 
-<p><strong>Results directory</strong>: ANALYSIS/{ANALYSS}09-annotation/</p>
+<p><strong>Results directory</strong>: ANALYSIS/07-annotation</p>
 
 <ul>
 <li><p>Files:</p>
 
 <ul>
-<li><code>{sample_id}/{sample_id}_all_annotated.tab</code> : final file for researcher examination. it includes all VarScan information and all annotation information by KGGSeq.</li>
-<li><code>{sample_id}/{sample_id}_annot.txt.flt.txt</code> : tab column file with KGGSeq annotation.</li>
-<li><code>{sample_id}/{sample_id}_annot.txt.log</code>: kggseq log.</li>
-<li><code>{sample_id}/{sample_id}_header.table</code>: intermediate file for header cleaning.</li>
+<li><code>tables/{sample_id}_all_annotated.tab</code> : final file for researcher examination. it includes all VarScan information and all annotation information by KGGSeq.</li>
+<li><code>annotation/{sample_id}_annot.txt.flt.txt</code> : tab column file with KGGSeq annotation.</li>
+<li><code>logs/{sample_id}_annot.txt.log</code>: kggseq log.</li>
+<li><code>tables/{sample_id}_header.table</code>: intermediate file for header cleaning.</li>
 </ul></li>
-<li><p>Description of kggseq columns in its output can be found in <a href="#annex-ii">Annex II</a></p></li>
+<li><p>Description of kggseq columns in its output can be found in <a href="#annex-iii">Annex III</a></p></li>
 </ul>
 
-<h1 id="toc_14">MultiQC</h1>
+<h2 id="toc_15">Statistics summary</h2>
+
+<h3 id="toc_16">Bamutil</h3>
+
+<p><a href="https://genome.sph.umich.edu/wiki/BamUtil">Bamutil</a> bam stats command is used for generating specified statistics on a BAM file. We use --basic parameter for basic statistic generation and --baseSum to print an overall summary of the baseQC. </p>
+
+<p><strong>Results directory:</strong> ANALYSIS/99-stats/bamstats</p>
+
+<ul>
+<li><p><code>{sample_id}_bamstat.txt</code>: tab separated file with an overall summary of the baseQC.</p></li>
+<li><p>Description of bamstats columns in its output can be found in <a href="#annex-vi">Annex VI</a></p></li>
+</ul>
+
+<h3 id="toc_17">Picard metrics</h3>
+
+<p>Metrics for the analysis of target-capture sequencing experiments are calculated with <a href="https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics">Picard CollectHsMetrics</a>. The metrics in this class fall broadly into three categories:</p>
+
+<ul>
+<li>Basic sequencing metrics that are either generated as a baseline against which to evaluate other metrics or because they are used in the calculation of other metrics. This includes things like the genome size, the number of reads, the number of aligned reads etc.</li>
+<li>Metrics that are intended for evaluating the performance of the wet-lab assay that generated the data. This group includes metrics like the number of bases mapping on/off/near baits, %selected, fold 80 base penalty, hs library size and the hs penalty metrics. These metrics are calculated prior to some of the filters are applied (e.g. low mapping quality reads, low base quality bases and bases overlapping in the middle of paired-end reads are all counted).</li>
+<li>Metrics for assessing target coverage as a proxy for how well the data is likely to perform in downstream applications like variant calling. This group includes metrics like mean target coverage, the percentage of bases reaching various coverage levels, and the percentage of bases excluded by various filters. These metrics are computed using the strictest subset of the data, after all filters have been applied.</li>
+</ul>
+
+<p><strong>Results directory:</strong> ANALYSIS/99-stats/picardmetrics</p>
+
+<ul>
+<li>Files:
+
+<ul>
+<li><code>hsMetrics_all.out</code> : summary of the some of the most meaningful columns in picard hsmetrics output for all the samples in the project.</li>
+<li><code>{sample_id}_hsMetrics.out</code>: full picard hsmetrics output per sample.</li>
+<li>Description of Picard hsMetrics columns in its output can be found in <a href="#annex-v">Annex V</a></li>
+</ul></li>
+</ul>
+
+<h3 id="toc_18">MultiQC</h3>
 
 <p><a href="http://multiqc.info">MultiQC</a> is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.</p>
 
-<p><strong>Output directory:</strong> ANALYSIS/{ANALYSIS_ID}/99-stats</p>
+<p><strong>Results directory:</strong> ANALYSIS/99-stats/multiQC</p>
 
 <ul>
 <li><code>multiqc_report.html</code>: MultiQC report - a standalone HTML file that can be viewed in your web browser</li>
@@ -484,7 +540,7 @@ Parameters included for trimming are:</p>
 
 <p>For more information about how to use MultiQC reports, see <a href="http://multiqc.info">http://multiqc.info</a></p>
 
-<h2 id="toc_15">Annex I</h2>
+<h2 id="toc_19">Annex I</h2>
 
 <div class="tables-start"></div>
 
@@ -582,7 +638,89 @@ Parameters included for trimming are:</p>
 
 <div class="tables-end"></div>
 
-<h2 id="toc_16">Annex II</h2>
+<h2 id="toc_20">Annex II</h2>
+
+<div class="tables-start"></div>
+
+<table><thead>
+<tr>
+<th>Column</th>
+<th>Name</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>CHROM</td>
+<td>chromosome name</td>
+</tr>
+<tr>
+<td>POS</td>
+<td>position</td>
+</tr>
+<tr>
+<td>REF</td>
+<td>reference allele at this position</td>
+</tr>
+<tr>
+<td>ALT</td>
+<td>the first alternate allele</td>
+</tr>
+<tr>
+<td>FILTER</td>
+<td>wether this position has passed all filters</td>
+</tr>
+<tr>
+<td>GT</td>
+<td>genotype, encoded as alleles values. 0 for the reference allele, 1 for the first allele listed in ALT, 2 for the second allele list in ALT and so on</td>
+</tr>
+<tr>
+<td>DP</td>
+<td>read depth at this position for this sample</td>
+</tr>
+<tr>
+<td>RD</td>
+<td>total reference depth</td>
+</tr>
+<tr>
+<td>AD</td>
+<td>total allelic depth</td>
+</tr>
+<tr>
+<td>FREQ</td>
+<td>frequence of alternate allele compared to reference (AD*100/(AD+RD))</td>
+</tr>
+<tr>
+<td>PVAL</td>
+<td>p-alue</td>
+</tr>
+<tr>
+<td>RBQ</td>
+<td>Reference base quality at this position</td>
+</tr>
+<tr>
+<td>ABQ</td>
+<td>Alternate allele base quality at this position</td>
+</tr>
+<tr>
+<td>RDF</td>
+<td>total reference depths on the forward strand</td>
+</tr>
+<tr>
+<td>RDR</td>
+<td>total reference depths on the reverse strand</td>
+</tr>
+<tr>
+<td>ADF</td>
+<td>total alternate allele depths on the forward strand</td>
+</tr>
+<tr>
+<td>ADR</td>
+<td>total alternate allele depths on the reverse strand</td>
+</tr>
+</tbody></table>
+
+<div class="tables-end"></div>
+
+<h2 id="toc_21">Annex III</h2>
 
 <div class="tables-start"></div>
 
@@ -788,7 +926,77 @@ Parameters included for trimming are:</p>
 
 <div class="tables-end"></div>
 
-<h2 id="toc_17">Annex III</h2>
+<h2 id="toc_22">Annex IV</h2>
+
+<div class="tables-start"></div>
+
+<table><thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>TotalReads</td>
+<td># of reads that are in the file</td>
+</tr>
+<tr>
+<td>Dups</td>
+<td># of reads marked duplicate in the flag</td>
+</tr>
+<tr>
+<td>QCFail</td>
+<td># of reads marked QC failure in the flag</td>
+</tr>
+<tr>
+<td>Mapped</td>
+<td># of reads marked mapped in the flag</td>
+</tr>
+<tr>
+<td>Paired</td>
+<td># of reads marked paired in the flag</td>
+</tr>
+<tr>
+<td>ProperPaired</td>
+<td># of reads marked paired AND proper paired in the flag</td>
+</tr>
+<tr>
+<td>ZeroMapQual</td>
+<td># of reads that have a Mapping Quality of 0 / TotalReads</td>
+</tr>
+<tr>
+<td>MapQual&lt;10</td>
+<td># of reads that have a Mapping Quality &lt; 10 / TotalReads</td>
+</tr>
+<tr>
+<td>MapQual255</td>
+<td># of reads that have a Mapping Quality = 255</td>
+</tr>
+<tr>
+<td>PassMapQual</td>
+<td># of reads that have a Mapping Quality &gt;= a minimum Mapping Quality</td>
+</tr>
+<tr>
+<td>AverageMapQuality</td>
+<td>sum of included mapping qualities / AverageMapQualCount</td>
+</tr>
+<tr>
+<td>AverageMapQualCount</td>
+<td># of mapping qualities in AverageMapQuality</td>
+</tr>
+<tr>
+<td>Depth</td>
+<td># of reads that are mapped with acceptable Mapping Quality, and are not duplicates or QC failures</td>
+</tr>
+<tr>
+<td>Q20Bases</td>
+<td># of bases at this position with a base quality (from the read) of Q20 or higher</td>
+</tr>
+</tbody></table>
+
+<div class="tables-end"></div>
+
+<h2 id="toc_23">Annex V</h2>
 
 <div class="tables-start"></div>
 
@@ -1014,7 +1222,7 @@ Parameters included for trimming are:</p>
 
 <div class="tables-end"></div>
 
-<h2 id="toc_18">Bibliography</h2>
+<h2 id="toc_24">Bibliography</h2>
 
 <ol>
 <li><em>Li, M.-X., Gui, H.-S., Kwan, J. S. H., Bao, S.-Y., &amp; Sham, P. C. (2012). A comprehensive framework for prioritizing variants in exome sequencing studies of Mendelian diseases. Nucleic acids research, 40(7), e53. doi:10.1093/nar/gkr1257</em></li>
