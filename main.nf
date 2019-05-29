@@ -431,7 +431,7 @@ if (params.removeDuplicates){
         file '*_picardDupMetrics.txt' into picard_reports
 
         script:
-        prefix = bam[0].toString() - ~/(_sorted)?(\.bam)?$/
+        prefix = bam.baseName - ~/(_sorted)?(\.bam)?$/
         """
         picard MarkDuplicates \\
             INPUT=$bam \\
