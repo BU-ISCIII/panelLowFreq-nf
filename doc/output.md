@@ -16,7 +16,6 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 * [VarScan](#varscan) v2.3.9 - variant calling.
 * [Bcftools](#bcftools) v1.9 - extract fields from vcf file.
 * [KGGSeq](#kggseq) v.1.1 - variant annotation.
-* [Bedtools](#bedtools) v.2.27 - calculating coverage %. 
 * [Bamutil](#bamutil) v.1.0.13 - bam stats for statistics on a BAM file. 
 * [MultiQC](#multiqc) v1.8dev - quality statistics summary.
 
