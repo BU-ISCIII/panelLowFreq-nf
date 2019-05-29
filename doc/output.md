@@ -71,8 +71,8 @@ MultiQC reports the percentage of bases removed by trimming in bar plot showing 
 
 **Results directory**: ANALYSIS/04-picard.
 - Files:
-   - `{sample_id}_dedup.bam` : deduplicated bam file.
-   - `{sample_id}_dedup.bam.bai`: index file for deduplicated aligned bam.
+   - `{sample_id}_dedup_sorted.bam` : deduplicated bam file.
+   - `{sample_id}_dedup_sorted.bam.bai`: index file for deduplicated aligned bam.
    - `{sample_id}_picardDupMetrics.txt`: txt file with the deduplication metrics.
 
 
