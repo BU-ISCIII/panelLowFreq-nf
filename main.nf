@@ -575,7 +575,7 @@ process bamstats {
     file '*_bamstat.txt' into bamstats_result
 
     script:
-    prefix = sorted_bam.baseName - ~/(_paired)?(_sorted)?(\.bam)?$/
+    prefix = sorted_bam.baseName - ~/(_paired)?(_dedup)?(_sorted)?(\.bam)?$/
 
     """
     bam stats --regionList $region_list --in $sorted_bam --baseSum --basic 2> ${prefix}_bamstat.txt
@@ -601,7 +601,7 @@ process picardmetrics {
     file 'hsMetrics_all.out' into picardstats_all_result
 
     script:
-    prefix = sorted_bam.baseName - ~/(\.bam)?(_sorted)?$/
+    prefix = sorted_bam.baseName - ~/(\.bam)?(_dedup)?(_sorted)?$/
 
     """
     picard CalculateHsMetrics BI=$picard_targer TI=$picard_targer I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
