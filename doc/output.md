@@ -12,7 +12,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 * [Trimmomatic](#trimming) v.0.38 - adapter and low quality trimming.
 * [BWA](#bwa) v.0.7.17 - mapping against reference genome.
 * [SAMtools](#samtools) v1.9 - alignment result processing and variant calling.
-* [Picard](#picard) v.1.140 - enrichment and alignment metrics.
+* [Picard](#picard) v.1.140 - Deduplication and enrichment and alignment metrics.
 * [VarScan](#varscan) v2.3.9 - variant calling.
 * [Bcftools](#bcftools) v1.9 - extract fields from vcf file.
 * [KGGSeq](#kggseq) v.1.1 - variant annotation.
@@ -28,9 +28,8 @@ For further reading and documentation see the [FastQC help](http://www.bioinform
 
 **Results directory**: ANALYSIS/01-fastqc
 - Files:
-   - `{sample_id}/{sample_id}_R[12]_fastqc.html`: html report. This file can be opened in your favourite web browser (Firefox/chrome preferable) and it contains the different graphs that fastqc calculates for QC.
-   - `{sample_id}/{sample_id}_R[12]_fastqc` : folder with fastqc output in plain text.
-   - `{sample_id}/{sample_id}_R[12]_fastqc.zip`: zip compression of above folder.
+   - `{sample_id}_R[12]_fastqc.html`: html report. This file can be opened in your favourite web browser (Firefox/chrome preferable) and it contains the different graphs that fastqc calculates for QC.
+   - `zips/{sample_id}_R[12]_fastqc.zip`: zip compression of above file.
 
 ### Trimming
 [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) is used for removal of adapter contamination and trimming of low quality regions.
@@ -45,10 +44,14 @@ MultiQC reports the percentage of bases removed by trimming in bar plot showing 
 
 **Results directory**: ANALYSIS/02-preprocessing
 - Files:
-   - `{sample_id}_R[12]_filtered.fastq.gz`: contains high quality reads with both forward and reverse tags surviving.
-   - `{sample_id}_R[12]_unpaired.fastq.gz`: contains high quality reads with only forward or reverse tags surviving.
+   - `trimmed/{sample_id}_filtered_R[12].fastq.gz`: contains high quality reads with both forward and reverse tags surviving.
+   - `trimmed/{sample_id}_unpaired_R[12].fastq.gz`: contains high quality reads with only forward or reverse tags surviving.
+   - `FastQC/{sample_id}_filtered_R[12].fastqc.html`: html report of the trimmed reads.
+   - `FastQC/{sample_id}_filtered_R[12].fastqc.html.zip`: zip compression of above file.
+   - `logs/{sample_id}.log`: log file of the trimming process.
 
-**NOTE:** This results are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.
+ 
+**NOTE:** Trimmed reads are not delivered to the researcher by default due to disk space issues. If you are interesested in using them, please contact us and we will add them to your delivery.
 
 ## Mapping
 
@@ -58,8 +61,20 @@ MultiQC reports the percentage of bases removed by trimming in bar plot showing 
 **Results directory**: ANALYSIS/03-mapping.
 - These files can be used in [IGV](https://software.broadinstitute.org/software/igv/) for alignment visualization.
 - Files:
+   - `{sample_id}_filtered.bam` : aligned bam file.
    - `{sample_id}_sorted.bam` : sorted aligned bam file.
    - `{sample_id}_sorted.bam.bai`: index file for soreted aligned bam.
+
+## Deduplication (optional)
+### Picard
+[Picard](https://broadinstitute.github.io/picard/) is a set of command line tools for manipulating high-throughput sequencing (HTS) data and formats such as SAM/BAM/CRAM and VCF. It is used to remove duplicated sequences. This step is optional.
+
+**Results directory**: ANALYSIS/04-picard.
+- Files:
+   - `{sample_id}_dedup.bam` : deduplicated bam file.
+   - `{sample_id}_sorted.bam.bai`: index file for deduplicated aligned bam.
+   - `{sample_id}_picardDupMetrics.txt`: txt file with the deduplication metrics.
+
 
 ## Variant Calling
 ### Samtools
@@ -121,7 +136,7 @@ Besides functional annotation some variant filtering is performed:
 
 - Description of bamstats columns in its output can be found in [Annex VI](#annex-vi)
 
-### Picard
+### Picard metrics
 Metrics for the analysis of target-capture sequencing experiments are calculated with [Picard CollectHsMetrics](https://broadinstitute.github.io/picard/picard-metric-definitions.html#HsMetrics). The metrics in this class fall broadly into three categories:
 
 - Basic sequencing metrics that are either generated as a baseline against which to evaluate other metrics or because they are used in the calculation of other metrics. This includes things like the genome size, the number of reads, the number of aligned reads etc.
