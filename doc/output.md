@@ -64,6 +64,7 @@ MultiQC reports the percentage of bases removed by trimming in bar plot showing 
    - `{sample_id}_filtered.bam` : aligned bam file.
    - `{sample_id}_sorted.bam` : sorted aligned bam file.
    - `{sample_id}_sorted.bam.bai`: index file for soreted aligned bam.
+   - `stats/{sample_id}_stats.txt`: txt file with the mapping stats.
 
 ## Deduplication (optional)
 ### Picard
