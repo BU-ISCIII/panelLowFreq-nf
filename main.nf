@@ -597,16 +597,36 @@ process picardmetrics {
 
 
     output:
-    file '*_hsMetrics.out' into picardstats_result
-    file 'hsMetrics_all.out' into picardstats_all_result
+    file '*_hsMetrics.out' into picardstats_result, picard_all_out
 
     script:
-    prefix = sorted_bam[0].toString() - '_sorted'
+    prefix = sorted_bam[0].toString() - '_sorted' - '.bam' - '_dup'
 
     """
     picard CalculateHsMetrics BI=$picard_targer TI=$picard_targer I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
+    """
+}
+
+/*
+ * STEP 5.2 - Picard CalculateHsMetrics
+ */
+ 
+process picard_all_out {
+    tag "$prefix"
+    publishDir "${params.outdir}/99-stats/picardmetrics", mode: 'copy'
+
+    input:
+    file picard_stats from picard_all_out.collect()
+
+    output:
+    file 'hsMetrics_all.out' into picardstats_all_result
+
+    script:
+    prefix = picard_stats[0].toString() - '_hsMetrics' - '.out'
+
+    """
     echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
-    grep '^RB' ${prefix}_hsMetrics.out | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
+    grep '^RB' $picard_stats | awk 'BEGIN{FS="\t";OFS=","}{print "${picard_stats[0].toString() - '_hsMetrics' - '.out'}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
     """
 }
 
