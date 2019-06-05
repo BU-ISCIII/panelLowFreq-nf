@@ -181,12 +181,12 @@ Channel
     .into { raw_reads_fastqc; raw_reads_trimming; raw_reads_bwa }
 
 // Create channel for fasta reference if supplied
-if( params.fasta ){
-    Channel
-        .fromPath(params.fasta)
-        .ifEmpty { exit 1, "Fasta reference not found: ${params.fasta}" }
-        .into { fasta_file; fasta_bwamem; fasta_file_pileup; fasta_bwa_index }
-}
+//if( params.fasta ){
+//    Channel
+//        .fromPath(params.fasta)
+//        .ifEmpty { exit 1, "Fasta reference not found: ${params.fasta}" }
+//        .into { fasta_file; fasta_bwamem; fasta_file_pileup; fasta_bwa_index }
+//}
 
 // Create channel for picard stat targets
 if( params.picardstatsTargets ){
@@ -294,8 +294,8 @@ if ( !params.indexFiles ){
 
         script:
         """
-       bwa index -a bwtsw $fasta 
-       """
+        bwa index -a bwtsw $fasta 
+        """
     }
 }
 
@@ -336,7 +336,7 @@ if ( !params.notrim ){
                 if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
                 else if (filename.indexOf(".log") > 0) "logs/$filename"
                 else if (params.saveTrimmed && filename.indexOf(".fastq.gz")) "trimmed/$filename"
-				else null
+                else null
         }
 
         input:
@@ -370,7 +370,8 @@ process bwa {
 
     input:
     file reads from raw_reads_bwa
-    file fasta from fasta_bwamem
+    file fasta from fasta_file	
+//    file fasta from fasta_bwamem
     file bwa_index from bwa_index.collect()
 
     output:
@@ -470,7 +471,8 @@ process mpileup {
     input:
     file bam from bam_samtools
     file bai_file from bai_samtools
-    file fasta from fasta_file_pileup
+    file fasta from fasta_file
+//    file fasta from fasta_file_pileup
     file bwa_index from bwa_index_pileup.collect()
 
     output:
@@ -529,7 +531,7 @@ process kggseq {
 
     script:
     """
-    bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
+    bcftools query -H $vcf -f '%CHROM    %POS    %REF    %ALT    %FILTER[    %GT    %DP    %RD    %AD    %FREQ    %PVAL    %RBQ    %ABQ    %RDF    %RDR    %ADF    %ADR]\n' > ${vcf.baseName}.table
     kggseq --no-lib-check --buildver hg38 --vcf-file $vcf --resource $resource --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
     gunzip *_annot.txt.flt.txt.gz
     cp ${baseDir}/assets/header ${vcf.baseName}_header.table && tail -n +2 ${vcf.baseName}.table >> ${vcf.baseName}_header.table
@@ -626,7 +628,7 @@ process picard_all_out {
 
     """
     echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
-    grep '^RB' $picard_stats | awk 'BEGIN{FS="\t";OFS=","}{print "${picard_stats[0].toString() - '_hsMetrics' - '.out'}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
+    grep '^RB' $picard_stats | awk 'BEGIN{FS="    ";OFS=","}{print "${picard_stats[0].toString() - '_hsMetrics' - '.out'}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
     """
 }
 
