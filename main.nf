@@ -530,6 +530,7 @@ process kggseq {
     file '*_header.table' into header_table
 
     script:
+	prefix = vcf.baseName - ~/(\.vcf)?$/
     """
     bcftools query -H $vcf -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER[\t%GT\t%DP\t%RD\t%AD\t%FREQ\t%PVAL\t%RBQ\t%ABQ\t%RDF\t%RDR\t%ADF\t%ADR]\n' > ${vcf.baseName}.table
     kggseq --no-lib-check --buildver hg38 --vcf-file $vcf --resource $resource --db-gene refgene --db-score dbnsfp --genome-annot --db-filter ESP5400,dbsnp141,1kg201305,exac --rare-allele-freq 1 --mendel-causing-predict best --omim-annot --out ${vcf.baseName}_annot.txt
@@ -602,7 +603,7 @@ process picardmetrics {
     file '*_hsMetrics.out' into picardstats_result, picard_all_out
 
     script:
-    prefix = sorted_bam[0].toString() - '_sorted' - '.bam' - '_dup'
+    prefix = sorted_bam[0].toString() - '_sorted' - '.bam' - '_dup' -'_header'
 
     """
     picard CalculateHsMetrics BI=$picard_targer TI=$picard_targer I=$sorted_bam O=${prefix}_hsMetrics.out VALIDATION_STRINGENCY='LENIENT'
@@ -628,7 +629,7 @@ process picard_all_out {
 
     """
     echo "SAMPLE","MEAN TARGET COVERAGE", "PCT USABLE BASES ON TARGET","FOLD ENRICHMENT","PCT TARGET BASES 10X","PCT TARGET BASES 20X","PCT TARGET BASES 30X","PCT TARGET BASES 40X","PCT TARGET BASES 50X" > hsMetrics_all.out
-    grep '^RB' $picard_stats | awk 'BEGIN{FS="    ";OFS=","}{print "${picard_stats[0].toString() - '_hsMetrics' - '.out'}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
+    grep '^RB' $picard_stats | awk 'BEGIN{FS="\t";OFS=","}{print "${prefix}",\$22,\$24,\$25,\$29,\$30,\$31,\$32,\$33}' >> hsMetrics_all.out
     """
 }
 
