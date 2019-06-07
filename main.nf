@@ -189,28 +189,28 @@ Channel
 //}
 
 // Create channel for picard stat targets
-if( params.picardstatsTargets ){
-    Channel
-        .fromPath(params.picardstatsTargets)
-        .ifEmpty { exit 1, "Picard stats file not found: ${params.picardstatsTargets}" }
-        .set { picardstatsTargets_file }
-}
+//if( params.picardstatsTargets ){
+//    Channel
+//        .fromPath(params.picardstatsTargets)
+//        .ifEmpty { exit 1, "Picard stats file not found: ${params.picardstatsTargets}" }
+//        .set { picardstatsTargets_file }
+//}
 
 // Create channel for bamstats stat targets
-if( params.bamstatsTargets ){
-    Channel
-        .fromPath(params.bamstatsTargets)
-        .ifEmpty { exit 1, "Picard stats file not found: ${params.bamstatsTargets}" }
-        .set { bamstatsTargets_file }
-}
+//if( params.bamstatsTargets ){
+//    Channel
+//        .fromPath(params.bamstatsTargets)
+//        .ifEmpty { exit 1, "Picard stats file not found: ${params.bamstatsTargets}" }
+//        .set { bamstatsTargets_file }
+//}
 
 // Create channel for resource Datasets
-if( params.resourceDatasets ){
-    Channel
-        .fromPath(params.resourceDatasets)
-        .ifEmpty { exit 1, "resource Datasets file not found: ${params.resourceDatasets}" }
-        .set { resourceDatasets_file }
-}
+//if( params.resourceDatasets ){
+//    Channel
+//        .fromPath(params.resourceDatasets)
+//        .ifEmpty { exit 1, "resource Datasets file not found: ${params.resourceDatasets}" }
+//        .set { resourceDatasets_file }
+//}
 
 //Create multiQC config chanel
 if (params.multiqc_config) {
